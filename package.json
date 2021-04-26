@@ -1,7 +1,8 @@
 {
   "name": "typical-data",
   "version": "0.0.1",
-  "description": "",
+  "description": "Test data factory written in TypeScript",
+  "homepage": "https://github.com/davidtkramer/typical-data",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
