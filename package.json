@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "description": "Test data factory written in TypeScript",
   "homepage": "https://github.com/davidtkramer/typical-data",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "clean": "rm -rf dist/*",
     "build": "tsc",
