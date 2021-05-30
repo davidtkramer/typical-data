@@ -1,5 +1,2 @@
-export class Factory {
-  build() {
-    return 'object';
-  }
-}
+export * from './factory';
+export * from './db';
