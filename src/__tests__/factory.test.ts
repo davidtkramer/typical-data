@@ -86,3 +86,28 @@ describe('Factory', () => {
     expect(room.createdBy).toBe('userId');
   });
 });
+
+
+// Factory.define<Room, { userId: string }>()
+//   .attributes({
+//     id({ sequence }) {
+//       return sequence.toString();
+//     },
+//     firmId: 'firmId',
+//     type: 'channel',
+//     name({ params, sequence }) {
+//       return params.type === 'channel' ? `room-${sequence}` : '';
+//     },
+//     createdBy({ transientParams }) {
+//       return transientParams?.userId ?? '';
+//     },
+//   })
+//   .trait('contact', (trait) =>
+//     trait
+//       .attributes({ type: 'contact' })
+//       .afterBuild((entity, { transientParams }) => {
+//         entity.roomId;
+//       })
+//   )
+//   .trait('direct', {})
+//   .afterBuild(() => {});

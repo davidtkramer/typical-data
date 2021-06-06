@@ -1,6 +1,6 @@
 import { Factory } from './factory';
 
-type EntityFromFactory<F> = F extends Factory<infer Entity, infer T>
+type EntityFromFactory<F> = F extends Factory<infer Entity, unknown>
   ? Entity
   : F;
 
