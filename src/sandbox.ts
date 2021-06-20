@@ -5,10 +5,10 @@ const map = {
 
 type TraitMap = typeof map;
 
-function foo<T extends keyof TraitMap>(trait: T, props: Pick<TraitMap, T>[T]) {}
+function foo1<T extends keyof TraitMap>(trait: T, props: Pick<TraitMap, T>[T]) {}
 
-foo('contact', { contact: 'foo' });
-foo('direct', { user: 'user' });
+foo1('contact', { contact: 'foo' });
+foo1('direct', { user: 'user' });
 
 function foo2<T extends keyof TraitMap>(
   ...args: [...Array<T>, Pick<TraitMap, T>[T]]
@@ -19,7 +19,7 @@ foo2('direct', { user: '' });
 foo2('contact', 'direct', { contact: 'contact', user: 'user' });
 
 type Test = Record<'foo', { foo: 'foo' }> &
-  Record<'bar', { bar: 'bar' }> &
+  Record<'bar', {}> &
   Record<'baz', { baz: 'baz' }> &
   unknown;
 
