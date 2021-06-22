@@ -1,28 +1,66 @@
-type GetKeys<U> = U extends Record<infer K, any> ? K : never;
-type UnionToIntersection<U> = {
-  [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
+type EntityAttributes<Entity, TransientParams> = {
+  [Property in keyof Entity]: EntityAttribute<
+    Entity,
+    TransientParams,
+    Property
+  >;
 };
+type EntityAttribute<Entity, TransientParams, Property extends keyof Entity> =
+  | AttributeBuilder<Entity, TransientParams, Property>
+  | Entity[Property];
+type AttributeBuilder<
+  Entity,
+  TransientParams,
+  Property extends keyof Entity
+> = (
+  params: AttributeBuilderParams<Entity, TransientParams>
+) => Entity[Property];
+type AttributeBuilderParams<Entity, TransientParams> = {
+  sequence: number;
+  params: Partial<Entity>;
+  transientParams?: TransientParams;
+};
+
 type TransientParamsForTraits<
   Traits,
   TraitNames extends keyof Traits
 > = UnionToIntersection<Pick<Traits, TraitNames>[TraitNames]>;
+type UnionToIntersection<U> = {
+  [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
+};
+type GetKeys<U> = U extends Record<infer K, any> ? K : never;
+
+type FinalBuilder<Builder> = Omit<Builder, 'attributes' | 'transient'>;
 
 interface TraitBuilder<
   Entity,
   GlobalTransientParams = unknown,
   TransientParams = {}
 > {
-  attributes(
-    attributes: Partial<Entity>
-  ): TraitBuilder<Entity, GlobalTransientParams, TransientParams>;
-
   transient<TraitTransientParams extends Record<string, unknown>>(
     params: TraitTransientParams
-  ): TraitBuilder<
-    Entity,
-    GlobalTransientParams,
-    TransientParams & TraitTransientParams
+  ): Omit<
+    TraitBuilder<
+      Entity,
+      GlobalTransientParams,
+      TransientParams & TraitTransientParams
+    >,
+    'transient'
   >;
+
+  attributes(
+    attributes: EntityAttributes<
+      Partial<Entity>,
+      GlobalTransientParams & TransientParams
+    >
+  ): FinalBuilder<TraitBuilder<Entity, GlobalTransientParams, TransientParams>>;
+
+  afterCreate(
+    afterCreateCallback: (
+      entity: Entity,
+      params: { transientParams: GlobalTransientParams & TransientParams }
+    ) => void
+  ): FinalBuilder<TraitBuilder<Entity, GlobalTransientParams, TransientParams>>;
 }
 
 interface FactoryBuilder<
@@ -30,24 +68,35 @@ interface FactoryBuilder<
   GlobalTransientParams = unknown,
   Traits = unknown
 > {
-  attributes<Entity>(
-    attributes: Entity
-  ): FactoryBuilder<Entity, GlobalTransientParams, Traits>;
-
   transient<GlobalTransientParams>(
     params: GlobalTransientParams
-  ): FactoryBuilder<Entity, GlobalTransientParams, Traits>;
+  ): Omit<FactoryBuilder<Entity, GlobalTransientParams, Traits>, 'transient'>;
+
+  attributes<Entity>(
+    attributes: EntityAttributes<Entity, GlobalTransientParams>
+  ): FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>;
 
   trait<Trait extends string, TraitTransientParams>(
     name: Trait,
     traitBuilderCallBack: (
       builder: TraitBuilder<Entity, GlobalTransientParams>
-    ) => TraitBuilder<Entity, GlobalTransientParams, TraitTransientParams>
-  ): FactoryBuilder<
-    Entity,
-    GlobalTransientParams,
-    Traits & Record<Trait, TraitTransientParams>
+    ) => FinalBuilder<
+      TraitBuilder<Entity, GlobalTransientParams, TraitTransientParams>
+    >
+  ): FinalBuilder<
+    FactoryBuilder<
+      Entity,
+      GlobalTransientParams,
+      Traits & Record<Trait, TraitTransientParams>
+    >
   >;
+
+  afterCreate(
+    afterCreateCallback: (
+      entity: Entity,
+      params: { transientParams: GlobalTransientParams }
+    ) => void
+  ): FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>;
 }
 
 interface EntityFactory<Entity, GlobalTransientParams, Traits> {
@@ -71,13 +120,13 @@ export const Factory = {
   define<Entity, GlobalTransientParams, Traits>(
     factoryBuilderCallback: (
       builder: FactoryBuilder
-    ) => FactoryBuilder<Entity, GlobalTransientParams, Traits>
+    ) => FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>
   ): EntityFactory<Entity, GlobalTransientParams, Traits> {
     const factory: EntityFactory<Entity, GlobalTransientParams, Traits> = {
       build(...params: Array<any>) {},
     };
 
-    const factoryBuilder: FactoryBuilder = {
+    const factoryBuilder: FactoryBuilder<any, any, any> = {
       attributes(attributes) {
         return factoryBuilder;
       },
@@ -85,15 +134,21 @@ export const Factory = {
         return factoryBuilder;
       },
       trait(name, traitBuilderCallBack) {
-        const traitBuilder: TraitBuilder<Entity> = {
+        const traitBuilder: TraitBuilder<any, any, any> = {
           attributes(attributes) {
             return traitBuilder;
           },
           transient(params) {
             return traitBuilder;
           },
+          afterCreate(afterCreateCallback) {
+            return traitBuilder;
+          },
         };
         traitBuilderCallBack(traitBuilder);
+        return factoryBuilder;
+      },
+      afterCreate(afterCreateCallback) {
         return factoryBuilder;
       },
     };
@@ -122,7 +177,9 @@ const userFactory = Factory.define((factory) =>
       firstName: 'Alice',
       lastName: 'Smith',
       isAdmin: false,
-      isActive: true,
+      isActive({ sequence, params, transientParams }) {
+        return true;
+      },
     })
     .trait('admin', (trait) =>
       trait
@@ -130,8 +187,11 @@ const userFactory = Factory.define((factory) =>
           foo: true,
         })
         .attributes({
-          isAdmin: true,
+          isAdmin({ sequence, params, transientParams }) {
+            return true;
+          },
         })
+        .afterCreate((entity, { transientParams }) => {})
     )
     .trait('standard', (trait) =>
       trait
@@ -141,13 +201,18 @@ const userFactory = Factory.define((factory) =>
         .attributes({
           isAdmin: true,
         })
+        .afterCreate((entity, { transientParams }) => {})
     )
     .trait('inactive', (trait) =>
       trait.attributes({
         isActive: false,
       })
     )
+    .afterCreate((entity, { transientParams }) => {})
 );
+
+// TODO:
+// fix Partial<Partial<User>> in trait params
 
 // no args
 userFactory.build();
