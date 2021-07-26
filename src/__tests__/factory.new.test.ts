@@ -1,8 +1,9 @@
-import { EntityFactory, Factory } from '../factory.new';
+import { Factory } from '../factory.new';
 
 /**
  * TODO
- * - implement buildList
+ * - fix lint errors
+ * - fix double partial on params in trait attribute builder
  * - runtime warnings for invalid dsl invocations
  * - omit trait from builder returned by afterCreate
  */
@@ -178,6 +179,76 @@ describe('build', () => {
     factory.build('admin', 'bot', { skipBotHook: true, skipOwnerHook: true });
     // @ts-expect-error - skipOwnerHook is not available
     factory.build('bot', { skipBotHook: true, skipOwnerHoook: true });
+  });
+});
+
+describe('buildList', () => {
+  const factory = Factory.define((factory) =>
+    factory
+      .attributes<{
+        id: number;
+        type: 'standard' | 'bot';
+        role: 'member' | 'admin' | 'owner';
+      }>({
+        id: ({ sequence }) => sequence + 1,
+        type: 'standard',
+        role: 'member',
+      })
+      .trait('admin', (trait) =>
+        trait.attributes({
+          role: 'admin',
+        })
+      )
+      .trait('bot', (trait) =>
+        trait.attributes({
+          type: 'bot',
+        })
+      )
+  );
+
+  beforeEach(() => {
+    factory.rewindSequence();
+  });
+
+  it('builds list of default entities', () => {
+    const users = factory.buildList(2);
+    expect(users).toHaveLength(2);
+    expect(users[0]).toEqual({ id: 1, type: 'standard', role: 'member' });
+    expect(users[1]).toEqual({ id: 2, type: 'standard', role: 'member' });
+  });
+
+  it('build list of entities with attribute overrides', () => {
+    const users = factory.buildList(2, { id: 10 });
+    expect(users).toHaveLength(2);
+    expect(users[0].id).toBe(10);
+    expect(users[1].id).toBe(10);
+  });
+
+  it('builds list of entities with single trait', () => {
+    const users = factory.buildList(2, 'admin');
+    expect(users).toHaveLength(2);
+    expect(users[0].role).toBe('admin');
+    expect(users[1].role).toBe('admin');
+  });
+
+  it('builds list of entities with multiple traits', () => {
+    const users = factory.buildList(2, 'admin', 'bot');
+    expect(users).toHaveLength(2);
+    expect(users[0].role).toBe('admin');
+    expect(users[0].type).toBe('bot');
+    expect(users[1].role).toBe('admin');
+    expect(users[1].type).toBe('bot');
+  });
+
+  it('build list of entities with multiple traits and attribute overrides', () => {
+    const users = factory.buildList(2, 'admin', 'bot', { id: 10 });
+    expect(users).toHaveLength(2);
+    expect(users[0].id).toBe(10);
+    expect(users[0].role).toBe('admin');
+    expect(users[0].type).toBe('bot');
+    expect(users[1].id).toBe(10);
+    expect(users[1].role).toBe('admin');
+    expect(users[1].type).toBe('bot');
   });
 });
 

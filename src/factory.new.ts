@@ -115,6 +115,25 @@ export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
       | Array<keyof Traits>
   ): Entity;
 
+  buildList(
+    count: number,
+    entity?: Partial<Entity & GlobalTransientParams>
+  ): Array<Entity>;
+
+  buildList<TraitNames extends keyof Traits>(
+    count: number,
+    ...params:
+      | [
+          ...traits: [TraitNames, ...Array<TraitNames>],
+          params: Partial<
+            Entity &
+              GlobalTransientParams &
+              TransientParamsForTraits<Traits, TraitNames>
+          >
+        ]
+      | Array<keyof Traits>
+  ): Array<Entity>;
+
   rewindSequence(): void;
 }
 
@@ -205,6 +224,14 @@ export const Factory = {
         afterCreate(entity, { transientParams });
 
         return entity as Entity;
+      },
+
+      buildList(count: number, ...args: any[]) {
+        let result = [];
+        for (let i = 0; i < count; i++) {
+          result.push(factory.build(...args));
+        }
+        return result;
       },
 
       rewindSequence() {
