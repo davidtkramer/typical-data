@@ -24,13 +24,65 @@ const userFactory = Factory.define((factory) =>
     )
 );
 
-const db = Database.create({
-  models: {
-    users: userFactory,
-  },
+describe('Database factory', () => {
+  describe('create', () => {
+    it('loads unnamed fixtures on creation', () => {
+      const db = Database.create({
+        models: { users: userFactory },
+        fixtures({ users }) {
+          users.create();
+        },
+      });
+
+      expect(db.users).toHaveLength(1);
+    });
+
+    it('loads named fixtures on creation', () => {
+      const db = Database.create({
+        models: { users: userFactory },
+        fixtures({ users }) {
+          return {
+            users: { current: users.create() },
+          };
+        },
+      });
+
+      expect(db.users).toHaveLength(1);
+      expect(db.fixtures.users.current).toBeDefined();
+    });
+  });
+});
+
+describe('database instance', () => {
+  describe('reset', () => {
+    it('resets entities and fixtures', () => {
+      const db = Database.create({
+        models: { users: userFactory },
+        fixtures({ users }) {
+          return {
+            users: { current: users.create() },
+          };
+        },
+      });
+
+      expect(db.users).toHaveLength(1);
+      expect(db.fixtures.users.current).toBeDefined();
+      const user = db.fixtures.users.current;
+      db.reset();
+      expect(db.users).toHaveLength(1);
+      expect(db.fixtures.users.current).toBeDefined();
+      expect(db.fixtures.users.current).not.toBe(user);
+    });
+  });
 });
 
 describe('entity store', () => {
+  const db = Database.create({
+    models: {
+      users: userFactory,
+    },
+  });
+
   beforeEach(() => {
     db.reset();
   });

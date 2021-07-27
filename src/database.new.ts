@@ -8,6 +8,10 @@ type EntityFromFactory<Factory> = Factory extends EntityFactory<
   ? Entity
   : never;
 
+type FixtureMap<FM extends FactoryMap> = {
+  [Property in keyof FM]: Record<string, EntityFromFactory<FM[Property]>>;
+};
+
 interface FactoryMap {
   [key: string]: EntityFactory<unknown, unknown, unknown>;
 }
@@ -25,22 +29,28 @@ type EntityStores<FM extends FactoryMap> = {
   [Property in keyof FM]: EntityStore<FM[Property]>;
 };
 
-type EntityDatabase<FM extends FactoryMap> = EntityStores<FM> & {
+type EntityDatabase<
+  FM extends FactoryMap,
+  FX extends FixtureMap<FM>
+> = EntityStores<FM> & {
   reset(): void;
+  fixtures: FX;
 };
 
 export const Database = {
-  create<FM extends FactoryMap>({
+  create<FM extends FactoryMap, FX extends FixtureMap<FM>>({
     models,
+    fixtures,
   }: {
     models: FM;
-  }): EntityDatabase<FM> {
+    fixtures?: (database: EntityDatabase<FM, any>) => FX | void;
+  }): EntityDatabase<FM, FX> {
     const database: Record<string, any> = {
       reset() {
         for (let key in models) {
           database[key].reset();
         }
-        // re-initialize fixtures
+        database.fixtures = fixtures?.(database as any);
       },
     };
 
@@ -66,6 +76,8 @@ export const Database = {
       database[key] = store;
     }
 
-    return database as EntityDatabase<FM>;
+    database.fixtures = fixtures?.(database as any);
+
+    return database as EntityDatabase<FM, FX>;
   },
 };
