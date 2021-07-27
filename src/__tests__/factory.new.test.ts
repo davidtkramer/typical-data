@@ -1,14 +1,5 @@
 import { Factory } from '../factory.new';
 
-/**
- * TODO
- * - fix lint errors
- * - fix double partial on params in trait attribute builder
- * - runtime warnings for invalid dsl invocations
- * - omit trait from builder returned by afterCreate
- * - shorthand syntax for trait with only attributes
- */
-
 describe('build', () => {
   const factory = Factory.define((factory) =>
     factory
