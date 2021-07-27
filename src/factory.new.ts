@@ -35,16 +35,12 @@ type FinalBuilder<Builder> = Omit<Builder, 'attributes' | 'transient'>;
 interface TraitBuilder<
   Entity,
   GlobalTransientParams = unknown,
-  TransientParams = {}
+  TransientParams = {} // eslint-disable-line @typescript-eslint/ban-types
 > {
   transient<TraitTransientParams extends Record<string, unknown>>(
     params: TraitTransientParams
   ): Omit<
-    TraitBuilder<
-      Entity,
-      GlobalTransientParams,
-      TransientParams & TraitTransientParams
-    >,
+    TraitBuilder<Entity, GlobalTransientParams, TraitTransientParams>,
     'transient'
   >;
 
@@ -76,8 +72,8 @@ interface FactoryBuilder<
     attributes: EntityAttributes<Entity, GlobalTransientParams>
   ): FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>;
 
-  trait<Trait extends string, TraitTransientParams>(
-    name: Trait,
+  trait<TraitName extends string, TraitTransientParams>(
+    name: TraitName,
     traitBuilderCallBack: (
       builder: TraitBuilder<Entity, GlobalTransientParams>
     ) => FinalBuilder<
@@ -87,7 +83,7 @@ interface FactoryBuilder<
     FactoryBuilder<
       Entity,
       GlobalTransientParams,
-      Traits & Record<Trait, TraitTransientParams>
+      Traits & Record<TraitName, TraitTransientParams>
     >
   >;
 

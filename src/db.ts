@@ -5,7 +5,7 @@ type EntityFromFactory<F> = F extends Factory<infer Entity, unknown>
   : F;
 
 type TransientParamsFromFactory<F> = F extends Factory<
-  infer Entity,
+  unknown,
   infer TransientParams
 >
   ? TransientParams

@@ -33,7 +33,7 @@ interface FactoryOptions<Entity, TransientParams> {
 
 export class Factory<Entity, TransientParams = Record<string, any>> {
   private schema: Schema<Entity, Partial<TransientParams>>;
-  private sequence: number = 0;
+  private sequence = 0;
   private options: FactoryOptions<Entity, Partial<TransientParams>>;
 
   constructor(
