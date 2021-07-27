@@ -1,2 +1,2 @@
 export * from './factory';
-export * from './db';
+export * from './database';

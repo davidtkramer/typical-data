@@ -1,4 +1,4 @@
-import { EntityFactory } from './factory.new';
+import { EntityFactory } from './factory';
 
 type EntityFromFactory<Factory> = Factory extends EntityFactory<
   infer Entity,

@@ -1,5 +1,5 @@
-import { Database } from '../database.new';
-import { Factory } from '../factory.new';
+import { Database } from '../database';
+import { Factory } from '../factory';
 
 interface User {
   id: number;
