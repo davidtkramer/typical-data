@@ -319,6 +319,19 @@ describe('DSL', () => {
   });
 
   describe('traits', () => {
+    it('defines trait with shorthand syntax', () => {
+      const factory = Factory.define((factory) =>
+        factory
+          .attributes<{ name: string }>({
+            name: 'Alice',
+          })
+          .trait('Bob', { name: 'Bob' })
+      );
+
+      const user = factory.build('Bob');
+      expect(user.name).toBe('Bob');
+    });
+
     it('can use sequence in attribute builder', () => {
       const factory = Factory.define((factory) =>
         factory
