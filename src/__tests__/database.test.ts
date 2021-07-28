@@ -53,13 +53,51 @@ describe('Database factory', () => {
     });
 
     it('allows nested factories', () => {
+      type BaseContact = { id: number; type: 'business' | 'individual' };
+      interface IndividualContact extends BaseContact {
+        type: 'individual';
+        fullName: string;
+      }
+      interface BusinessContact extends BaseContact {
+        type: 'business';
+        businessName: string;
+      }
+
       const db = Database.create({
-        factories: { users: { standard: userFactory } },
+        factories: {
+          contacts: {
+            individual: Factory.define((factory) =>
+              factory.attributes<IndividualContact>({
+                id: ({ sequence }) => sequence * 2,
+                type: 'individual',
+                fullName: 'Alice',
+              })
+            ),
+            business: Factory.define((factory) =>
+              factory.attributes<BusinessContact>({
+                id: ({ sequence }) => sequence * 2 + 1,
+                type: 'business',
+                businessName: 'Mega Lo Mart',
+              })
+            ),
+          },
+        },
       });
 
-      expect(db.users).toHaveLength(1);
-      // shoulld db.users.standard still be an array?
-      expect(db.users.standard).toBeDefined();
+      db.contacts.individual.create();
+      db.contacts.individual.createList(1);
+      db.contacts.business.create();
+      db.contacts.business.createList(1);
+
+      expect(db.contacts).toHaveLength(4);
+      expect(db.contacts[0].id).toBe(0);
+      expect(db.contacts[0].type).toBe('individual');
+      expect(db.contacts[2].id).toBe(1);
+      expect(db.contacts[2].type).toBe('business');
+
+      db.contacts.reset();
+
+      expect(db.contacts).toHaveLength(0);
     });
   });
 });
