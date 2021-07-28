@@ -50,6 +50,16 @@ describe('Database factory', () => {
       expect(db.users).toHaveLength(1);
       expect(db.fixtures.users.current).toBeDefined();
     });
+
+    it('allows nested factories', () => {
+      const db = Database.create({
+        models: { users: { standard: userFactory } },
+      });
+
+      expect(db.users).toHaveLength(1);
+      // shoulld db.users.standard still be an array?
+      expect(db.users.standard).toBeDefined();
+    });
   });
 });
 
