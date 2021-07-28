@@ -52,7 +52,7 @@ describe('Database factory', () => {
       expect(db.fixtures.users.current).toBeDefined();
     });
 
-    it('allows nested factories', () => {
+    it('handles nested factories', () => {
       type BaseContact = { id: number; type: 'business' | 'individual' };
       interface IndividualContact extends BaseContact {
         type: 'individual';
