@@ -74,11 +74,13 @@ interface FactoryBuilder<
 
   trait<TraitName extends string, TraitTransientParams>(
     name: TraitName,
-    traitBuilderCallBack: (
-      builder: TraitBuilder<Entity, GlobalTransientParams>
-    ) => FinalBuilder<
-      TraitBuilder<Entity, GlobalTransientParams, TraitTransientParams>
-    >
+    traitBuilderArg:
+      | EntityAttributes<Entity, GlobalTransientParams>
+      | ((
+          builder: TraitBuilder<Entity, GlobalTransientParams>
+        ) => FinalBuilder<
+          TraitBuilder<Entity, GlobalTransientParams, TraitTransientParams>
+        >)
   ): FinalBuilder<
     FactoryBuilder<
       Entity,
@@ -261,27 +263,31 @@ export const Factory = {
         definition.transientParamDefaults = params;
         return factoryBuilder;
       },
-      trait(name, traitBuilderCallBack) {
+      trait(name, traitBuilderArg) {
         definition.traits[name] = {
           attributeDefaults: {},
           transientParamDefaults: {},
           afterCreate: undefined,
         };
-        const traitBuilder: TraitBuilder<any, any, any> = {
-          attributes(attributes) {
-            definition.traits[name].attributeDefaults = attributes;
-            return traitBuilder;
-          },
-          transient(params) {
-            definition.traits[name].transientParamDefaults = params;
-            return traitBuilder;
-          },
-          afterCreate(afterCreateCallback) {
-            definition.traits[name].afterCreate = afterCreateCallback;
-            return traitBuilder;
-          },
-        };
-        traitBuilderCallBack(traitBuilder);
+        if (typeof traitBuilderArg === 'function') {
+          const traitBuilder: TraitBuilder<any, any, any> = {
+            attributes(attributes) {
+              definition.traits[name].attributeDefaults = attributes;
+              return traitBuilder;
+            },
+            transient(params) {
+              definition.traits[name].transientParamDefaults = params;
+              return traitBuilder;
+            },
+            afterCreate(afterCreateCallback) {
+              definition.traits[name].afterCreate = afterCreateCallback;
+              return traitBuilder;
+            },
+          };
+          traitBuilderArg(traitBuilder);
+        } else {
+          definition.traits[name].attributeDefaults = traitBuilderArg;
+        }
         return factoryBuilder;
       },
       afterCreate(afterCreateCallback) {
