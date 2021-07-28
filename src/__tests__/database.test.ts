@@ -28,18 +28,19 @@ describe('Database factory', () => {
   describe('create', () => {
     it('loads unnamed fixtures on creation', () => {
       const db = Database.create({
-        models: { users: userFactory },
+        factories: { users: userFactory },
         fixtures({ users }) {
           users.create();
         },
       });
 
       expect(db.users).toHaveLength(1);
+      expect(db.fixtures).toBeUndefined();
     });
 
     it('loads named fixtures on creation', () => {
       const db = Database.create({
-        models: { users: userFactory },
+        factories: { users: userFactory },
         fixtures({ users }) {
           return {
             users: { current: users.create() },
@@ -53,7 +54,7 @@ describe('Database factory', () => {
 
     it('allows nested factories', () => {
       const db = Database.create({
-        models: { users: { standard: userFactory } },
+        factories: { users: { standard: userFactory } },
       });
 
       expect(db.users).toHaveLength(1);
@@ -67,7 +68,7 @@ describe('database instance', () => {
   describe('reset', () => {
     it('resets entities and fixtures', () => {
       const db = Database.create({
-        models: { users: userFactory },
+        factories: { users: userFactory },
         fixtures({ users }) {
           return {
             users: { current: users.create() },
@@ -88,7 +89,7 @@ describe('database instance', () => {
 
 describe('entity store', () => {
   const db = Database.create({
-    models: {
+    factories: {
       users: userFactory,
     },
   });

@@ -8,14 +8,16 @@ type EntityFromFactory<Factory> = Factory extends EntityFactory<
   ? Entity
   : never;
 
-type FixtureMap<FM extends FactoryMap> = {
+type FixtureMap<FM extends FactoryConfig> = {
   [Property in keyof FM]: Record<string, EntityFromFactory<FM[Property]>>;
 };
 
 interface FactoryMap {
-  [key: string]:
-    | EntityFactory<unknown, unknown, unknown>
-    | { [key: string]: EntityFactory<unknown, unknown, unknown> };
+  [key: string]: EntityFactory<unknown, unknown, unknown>;
+}
+
+interface FactoryConfig {
+  [key: string]: EntityFactory<unknown, unknown, unknown> | FactoryMap;
 }
 
 interface EntityStore<
@@ -27,26 +29,18 @@ interface EntityStore<
   reset(): Array<Entity>;
 }
 
-type EntityStores<FM extends FactoryMap> = {
-  [Property in keyof FM]: FM[Property] extends EntityFactory<
-    unknown,
-    unknown,
-    unknown
-  >
-    ? EntityStore<FM[Property]>
-    : FM[Property] extends {
-        [key: string]: EntityFactory<unknown, unknown, unknown>;
-      }
+type EntityStores<FC extends FactoryConfig> = {
+  [Prop in keyof FC]: FC[Prop] extends EntityFactory<unknown, unknown, unknown>
+    ? EntityStore<FC[Prop]>
+    : FC[Prop] extends FactoryMap
     ? {
-        [NestedProperty in keyof FM[Property]]: EntityStore<
-          FM[Property][NestedProperty]
-        >;
+        [NestedProp in keyof FC[Prop]]: EntityStore<FC[Prop][NestedProp]>;
       }
     : never;
 };
 
 type EntityDatabase<
-  FM extends FactoryMap,
+  FM extends FactoryConfig,
   FX extends FixtureMap<FM>
 > = EntityStores<FM> & {
   reset(): void;
@@ -54,24 +48,24 @@ type EntityDatabase<
 };
 
 export const Database = {
-  create<FM extends FactoryMap, FX extends FixtureMap<FM>>({
-    models,
+  create<FC extends FactoryConfig, FM extends FixtureMap<FC>>({
+    factories,
     fixtures,
   }: {
-    models: FM;
-    fixtures?: (database: EntityDatabase<FM, any>) => FX | void;
-  }): EntityDatabase<FM, FX> {
+    factories: FC;
+    fixtures?: (database: EntityDatabase<FC, any>) => FM | void;
+  }): EntityDatabase<FC, FM> {
     const database: Record<string, any> = {
       reset() {
-        for (let key in models) {
+        for (let key in factories) {
           database[key].reset();
         }
         database.fixtures = fixtures?.(database as any);
       },
     };
 
-    for (let key in models) {
-      const factory = models[key];
+    for (let key in factories) {
+      const factory = factories[key];
 
       if (isFactory(factory)) {
         const entities: Array<any> = [];
@@ -99,7 +93,7 @@ export const Database = {
 
     database.fixtures = fixtures?.(database as any);
 
-    return database as EntityDatabase<FM, FX>;
+    return database as EntityDatabase<FC, FM>;
   },
 };
 
