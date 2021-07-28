@@ -133,6 +133,8 @@ export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
   ): Array<Entity>;
 
   rewindSequence(): void;
+
+  withSequence(sequence: { count: number }): void;
 }
 
 interface FactoryDefinition {
@@ -147,7 +149,7 @@ interface FactoryDefinition {
     }
   >;
   afterCreate(...args: Array<any>): void;
-  sequence: number;
+  sequence: { count: number };
 }
 
 export const Factory = {
@@ -161,7 +163,7 @@ export const Factory = {
       transientParamDefaults: {},
       traits: {},
       afterCreate: () => null,
-      sequence: -1,
+      sequence: { count: -1 },
     };
 
     const factory: EntityFactory<Entity, GlobalTransientParams, Traits> = {
@@ -187,7 +189,7 @@ export const Factory = {
 
         // build entity
         const entity: Record<string, any> = attributes;
-        definition.sequence++;
+        definition.sequence.count++;
 
         // apply defaults from traits
         for (let traitName of traitNames) {
@@ -198,7 +200,7 @@ export const Factory = {
             let attribute = trait.attributeDefaults[key];
             if (typeof attribute === 'function') {
               entity[key] = attribute({
-                sequence: definition.sequence,
+                sequence: definition.sequence.count,
                 params: { ...attributes, ...entity },
                 transientParams: {
                   ...trait.transientParamDefaults,
@@ -217,7 +219,7 @@ export const Factory = {
           let attribute = definition.attributeDefaults[key];
           if (typeof attribute === 'function') {
             entity[key] = attribute({
-              sequence: definition.sequence,
+              sequence: definition.sequence.count,
               params: { ...attributes, ...entity },
               transientParams,
             });
@@ -250,7 +252,11 @@ export const Factory = {
       },
 
       rewindSequence() {
-        definition.sequence = -1;
+        definition.sequence.count = -1;
+      },
+
+      withSequence(sequence) {
+        definition.sequence = sequence;
       },
     };
 

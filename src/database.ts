@@ -99,6 +99,7 @@ export const Database = {
         });
         database[key] = store;
       } else if (typeof item === 'object') {
+        const sequence = { count: -1 };
         const entities: Array<any> = [];
         const combinedStore = Object.assign(entities, {
           reset() {
@@ -118,6 +119,7 @@ export const Database = {
           if (!isFactory(factory)) {
             throw new Error('Invalid item provided to nested factory config.');
           }
+          factory.withSequence(sequence);
 
           Object.assign(combinedStore, {
             [key]: {
@@ -148,5 +150,11 @@ export const Database = {
 };
 
 function isFactory(arg: any): arg is EntityFactory<unknown, unknown, unknown> {
-  return typeof arg.build === 'function';
+  const factory = arg as EntityFactory<unknown, unknown, unknown>;
+  return (
+    typeof factory === 'object' &&
+    typeof factory.build === 'function' &&
+    typeof factory.buildList === 'function' &&
+    typeof factory.rewindSequence === 'function'
+  );
 }

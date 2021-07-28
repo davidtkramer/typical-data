@@ -68,14 +68,14 @@ describe('Database factory', () => {
           contacts: {
             individual: Factory.define((factory) =>
               factory.attributes<IndividualContact>({
-                id: ({ sequence }) => sequence * 2,
+                id: ({ sequence }) => sequence,
                 type: 'individual',
                 fullName: 'Alice',
               })
             ),
             business: Factory.define((factory) =>
               factory.attributes<BusinessContact>({
-                id: ({ sequence }) => sequence * 2 + 1,
+                id: ({ sequence }) => sequence,
                 type: 'business',
                 businessName: 'Mega Lo Mart',
               })
@@ -90,10 +90,18 @@ describe('Database factory', () => {
       db.contacts.business.createList(1);
 
       expect(db.contacts).toHaveLength(4);
-      expect(db.contacts[0].id).toBe(0);
+
+      // can store mix of entity types
       expect(db.contacts[0].type).toBe('individual');
-      expect(db.contacts[2].id).toBe(1);
+      expect(db.contacts[1].type).toBe('individual');
       expect(db.contacts[2].type).toBe('business');
+      expect(db.contacts[3].type).toBe('business');
+
+      // shares sequence between entity types
+      expect(db.contacts[0].id).toBe(0);
+      expect(db.contacts[1].id).toBe(1);
+      expect(db.contacts[2].id).toBe(2);
+      expect(db.contacts[3].id).toBe(3);
 
       db.contacts.reset();
 
