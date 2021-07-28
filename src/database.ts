@@ -8,12 +8,16 @@ type EntityFromFactory<Factory> = Factory extends EntityFactory<
   ? Entity
   : never;
 
-type FixtureMap<FM extends FactoryMap> = {
-  [Property in keyof FM]: Record<string, EntityFromFactory<FM[Property]>>;
+type FixtureMap<FC extends FactoryConfig> = {
+  [Property in keyof FC]: Record<string, EntityFromFactory<FC[Property]>>;
 };
 
 interface FactoryMap {
   [key: string]: EntityFactory<unknown, unknown, unknown>;
+}
+
+interface FactoryConfig {
+  [key: string]: EntityFactory<unknown, unknown, unknown> | FactoryMap;
 }
 
 interface EntityStore<
@@ -25,59 +29,126 @@ interface EntityStore<
   reset(): Array<Entity>;
 }
 
-type EntityStores<FM extends FactoryMap> = {
-  [Property in keyof FM]: EntityStore<FM[Property]>;
+interface ParentEntityStore<
+  Factory extends EntityFactory<unknown, unknown, unknown>,
+  Entity = EntityFromFactory<Factory>
+> extends Array<Entity> {
+  reset(): Array<Entity>;
+}
+
+type EntityStores<FC extends FactoryConfig> = {
+  [Prop in keyof FC]: FC[Prop] extends EntityFactory<unknown, unknown, unknown>
+    ? EntityStore<FC[Prop]>
+    : FC[Prop] extends FactoryMap
+    ? {
+        [NestedProp in keyof FC[Prop]]: Omit<
+          EntityStore<FC[Prop][NestedProp]>,
+          'reset'
+        >;
+      } &
+        ParentEntityStore<FC[Prop][keyof FC[Prop]]>
+    : never;
 };
 
 type EntityDatabase<
-  FM extends FactoryMap,
-  FX extends FixtureMap<FM>
-> = EntityStores<FM> & {
+  FC extends FactoryConfig,
+  FM extends FixtureMap<FC>
+> = EntityStores<FC> & {
   reset(): void;
-  fixtures: FX;
+  fixtures: FM;
 };
 
 export const Database = {
-  create<FM extends FactoryMap, FX extends FixtureMap<FM>>({
-    models,
+  create<FC extends FactoryConfig, FM extends FixtureMap<FC>>({
+    factories,
     fixtures,
   }: {
-    models: FM;
-    fixtures?: (database: EntityDatabase<FM, any>) => FX | void;
-  }): EntityDatabase<FM, FX> {
+    factories: FC;
+    fixtures?: (database: EntityDatabase<FC, any>) => FM | void;
+  }): EntityDatabase<FC, FM> {
     const database: Record<string, any> = {
       reset() {
-        for (let key in models) {
+        for (const key in factories) {
           database[key].reset();
         }
         database.fixtures = fixtures?.(database as any);
       },
     };
 
-    for (let key in models) {
-      const factory = models[key];
-      const entities: Array<any> = [];
-      const store = Object.assign(entities, {
-        create(...args: Array<any>) {
-          const entity = factory.build(...args);
-          entities.push(entity);
-          return entity;
-        },
-        createList(count: number, ...args: Array<any>) {
-          const result = factory.buildList(count, ...args);
-          entities.push(...result);
-          return result;
-        },
-        reset() {
-          factory.rewindSequence();
-          return entities.splice(0, entities.length);
-        },
-      });
-      database[key] = store;
+    for (const key in factories) {
+      const item = factories[key];
+
+      if (isFactory(item)) {
+        const factory = item;
+        const entities: Array<any> = [];
+        const store = Object.assign(entities, {
+          create(...args: Array<any>) {
+            const entity = factory.build(...args);
+            entities.push(entity);
+            return entity;
+          },
+          createList(count: number, ...args: Array<any>) {
+            const result = factory.buildList(count, ...args);
+            entities.push(...result);
+            return result;
+          },
+          reset() {
+            factory.rewindSequence();
+            return entities.splice(0, entities.length);
+          },
+        });
+        database[key] = store;
+      } else if (typeof item === 'object') {
+        const sequence = { count: -1 };
+        const entities: Array<any> = [];
+        const combinedStore = Object.assign(entities, {
+          reset() {
+            sequence.count = -1;
+            return entities.splice(0, entities.length);
+          },
+        });
+
+        for (const key in item) {
+          const factory = item[key];
+          if (!isFactory(factory)) {
+            throw new Error('Invalid item provided to nested factory config.');
+          }
+          factory.withSequence(sequence);
+
+          Object.assign(combinedStore, {
+            [key]: {
+              create(...args: Array<any>) {
+                const entity = factory.build(...args);
+                entities.push(entity);
+                return entity;
+              },
+              createList(count: number, ...args: Array<any>) {
+                const result = factory.buildList(count, ...args);
+                entities.push(...result);
+                return result;
+              },
+            },
+          });
+        }
+
+        database[key] = combinedStore;
+      } else {
+        throw new Error('Invalid argument passed to Database.create');
+      }
     }
 
     database.fixtures = fixtures?.(database as any);
 
-    return database as EntityDatabase<FM, FX>;
+    return database as EntityDatabase<FC, FM>;
   },
 };
+
+function isFactory(arg: any): arg is EntityFactory<unknown, unknown, unknown> {
+  const factory = arg as EntityFactory<unknown, unknown, unknown>;
+  return (
+    typeof factory === 'object' &&
+    typeof factory.build === 'function' &&
+    typeof factory.buildList === 'function' &&
+    typeof factory.rewindSequence === 'function'
+  );
+}
