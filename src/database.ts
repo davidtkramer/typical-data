@@ -103,13 +103,7 @@ export const Database = {
         const entities: Array<any> = [];
         const combinedStore = Object.assign(entities, {
           reset() {
-            for (const key in item) {
-              const factory = item[key];
-              if (isFactory(factory)) {
-                factory.rewindSequence();
-              }
-            }
-            // rewind sequence on each factory
+            sequence.count = -1;
             return entities.splice(0, entities.length);
           },
         });

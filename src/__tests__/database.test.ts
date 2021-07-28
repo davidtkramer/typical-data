@@ -105,7 +105,10 @@ describe('Database factory', () => {
 
       db.contacts.reset();
 
+      // contact store is reset
       expect(db.contacts).toHaveLength(0);
+      // shared sequence is reset
+      expect(db.contacts.individual.create().id).toBe(0);
     });
   });
 });
