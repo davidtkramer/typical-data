@@ -47,7 +47,10 @@ type UnionToIntersection<U> = {
 };
 type GetKeys<U> = U extends Record<infer K, any> ? K : never;
 
-type FinalBuilder<Builder> = Omit<Builder, 'attributes' | 'transient'>;
+type FinalBuilder<Builder> = Omit<
+  Builder,
+  'extends' | 'attributes' | 'transient'
+>;
 
 interface TraitBuilder<
   Entity,
@@ -85,10 +88,13 @@ interface FactoryBuilder<
     ParentFactories extends Array<EntityFactory<unknown, unknown, unknown>>
   >(
     ...parentFactories: ParentFactories
-  ): FactoryBuilder<
-    FactoryBuilderTypesFromFactories<ParentFactories>['entities'],
-    FactoryBuilderTypesFromFactories<ParentFactories>['globalTransientParams'],
-    FactoryBuilderTypesFromFactories<ParentFactories>['traits']
+  ): Omit<
+    FactoryBuilder<
+      FactoryBuilderTypesFromFactories<ParentFactories>['entities'],
+      FactoryBuilderTypesFromFactories<ParentFactories>['globalTransientParams'],
+      FactoryBuilderTypesFromFactories<ParentFactories>['traits']
+    >,
+    'extends'
   >;
 
   transient<GlobalTransientParams>(
@@ -168,6 +174,9 @@ export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
   rewindSequence(): void;
 
   withSequence(sequence: { count: number }): void;
+
+  /** @internal */
+  getDefinition(): FactoryDefinition;
 }
 
 interface FactoryDefinition {
@@ -181,7 +190,7 @@ interface FactoryDefinition {
       afterCreate?(...args: Array<any>): void;
     }
   >;
-  afterCreate(...args: Array<any>): void;
+  afterCreateHooks: Array<(...args: Array<any>) => void>;
   sequence: { count: number };
 }
 
@@ -195,7 +204,7 @@ export const Factory = {
       attributeDefaults: {},
       transientParamDefaults: {},
       traits: {},
-      afterCreate: () => null,
+      afterCreateHooks: [],
       sequence: { count: -1 },
     };
 
@@ -271,7 +280,10 @@ export const Factory = {
             },
           });
         }
-        definition.afterCreate(entity, { transientParams });
+
+        for (let afterCreate of definition.afterCreateHooks) {
+          afterCreate(entity, { transientParams });
+        }
 
         return entity as Entity;
       },
@@ -291,11 +303,24 @@ export const Factory = {
       withSequence(sequence) {
         definition.sequence = sequence;
       },
+
+      getDefinition() {
+        return definition;
+      },
     };
 
     const factoryBuilder: FactoryBuilder<any, any, any> = {
-      extends(...parents: Array<any>) {
-        console.log(parents);
+      extends(...parents: Array<EntityFactory<any, any, any>>) {
+        for (let parent of parents) {
+          const parentDefinition = parent.getDefinition();
+          definition.attributeDefaults = {
+            ...parentDefinition.attributeDefaults,
+          };
+          definition.transientParamDefaults = {
+            ...parentDefinition.transientParamDefaults,
+          };
+          definition.traits = { ...parentDefinition.traits };
+        }
         return factoryBuilder;
       },
       transient(params) {
@@ -303,7 +328,7 @@ export const Factory = {
         return factoryBuilder;
       },
       attributes(params) {
-        definition.attributeDefaults = params;
+        Object.assign(definition.attributeDefaults, params);
         return factoryBuilder;
       },
       trait(name, traitBuilderArg) {
@@ -334,7 +359,7 @@ export const Factory = {
         return factoryBuilder;
       },
       afterCreate(afterCreateCallback) {
-        definition.afterCreate = afterCreateCallback;
+        definition.afterCreateHooks.push(afterCreateCallback);
         return factoryBuilder;
       },
     };

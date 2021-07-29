@@ -304,7 +304,7 @@ describe('DSL', () => {
       );
 
       const entity = childFactory.build();
-      expect(entity.id).toBe(2);
+      expect(entity.id).toBe(1);
       expect(entity.email).toBe('contactus@megalomart.com');
       expect(entity.businessName).toBe('Mega Lo Mart');
     });
