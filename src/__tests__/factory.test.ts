@@ -245,6 +245,67 @@ describe('buildList', () => {
 });
 
 describe('DSL', () => {
+  describe('extends', () => {
+    it('sandbox', () => {
+      interface BaseContact {
+        id: number;
+        email: string;
+        phone: string;
+      }
+      interface BusinessContact extends BaseContact {
+        businessName: string;
+      }
+
+      // type where base contact attributes are optional
+      // and business contact attributes are required
+      type CommonAttributes<Parent, Child> = Partial<
+        Pick<Child, keyof (Parent | Child)>
+      >;
+      type NewAttributes<Parent, Child> = Omit<Child, keyof Parent>;
+      type ExtendedAttributes<Parent, Child> = CommonAttributes<Parent, Child> &
+        NewAttributes<Parent, Child>;
+
+      const foo: ExtendedAttributes<unknown, BusinessContact> = {
+        id: 1,
+        email: '',
+        phone: '',
+        businessName: 'yay',
+      };
+      console.log(foo);
+    });
+
+    it('can extend from other factories', () => {
+      interface BaseContact {
+        id: number;
+        email: string;
+      }
+      interface BusinessContact extends BaseContact {
+        businessName: string;
+      }
+
+      const parentFactory = Factory.define((factory) =>
+        factory.attributes<BaseContact>({
+          id: 1,
+          email: 'email@example.com',
+        })
+      );
+      const childFactory = Factory.define((factory) =>
+        factory
+          .extends(parentFactory)
+          .attributes<BusinessContact>({
+            email: 'contactus@megalomart.com',
+            businessName: 'Mega Lo Mart',
+          })
+          .trait('pollo', { businessName: 'foo' })
+      );
+
+      const entity = childFactory.build();
+      expect(entity.id).toBe(2);
+      expect(entity.email).toBe('contactus@megalomart.com');
+      expect(entity.businessName).toBe('Mega Lo Mart');
+    });
+  });
+
   describe('transient', () => {
     it('can handle optional params', () => {
       type TransientParams = { globalTransientId?: number };
@@ -322,7 +383,8 @@ describe('DSL', () => {
     it('defines trait with shorthand syntax', () => {
       const factory = Factory.define((factory) =>
         factory
-          .attributes<{ name: string }>({
+          .attributes<{ id: number; name: string }>({
+            id: 1,
             name: 'Alice',
           })
           .trait('Bob', { name: 'Bob' })

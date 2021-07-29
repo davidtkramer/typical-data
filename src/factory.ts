@@ -1,3 +1,10 @@
+type CommonAttributes<Parent, Child> = Partial<
+  Pick<Child, keyof (Parent | Child)>
+>;
+type NewAttributes<Parent, Child> = Omit<Child, keyof Parent>;
+type ExtendedAttributes<Parent, Child> = CommonAttributes<Parent, Child> &
+  NewAttributes<Parent, Child>;
+
 type EntityAttributes<Entity, TransientParams> = {
   [Property in keyof Entity]: EntityAttribute<
     Entity,
@@ -60,30 +67,47 @@ interface TraitBuilder<
 }
 
 interface FactoryBuilder<
-  Entity = unknown,
+  OuterEntity = unknown,
   GlobalTransientParams = unknown,
   Traits = unknown
 > {
+  extends<ParentEntity, ParentGlobalTransientParams, ParentTraits>(
+    parent: EntityFactory<
+      ParentEntity,
+      ParentGlobalTransientParams,
+      ParentTraits
+    >
+  ): Omit<
+    FactoryBuilder<ParentEntity, ParentGlobalTransientParams, ParentTraits>,
+    'extends'
+  >;
+
   transient<GlobalTransientParams>(
     params: GlobalTransientParams
-  ): Omit<FactoryBuilder<Entity, GlobalTransientParams, Traits>, 'transient'>;
+  ): Omit<
+    FactoryBuilder<OuterEntity, GlobalTransientParams, Traits>,
+    'transient'
+  >;
 
-  attributes<Entity>(
-    attributes: EntityAttributes<Entity, GlobalTransientParams>
+  attributes<Entity extends OuterEntity>(
+    attributes: EntityAttributes<
+      ExtendedAttributes<OuterEntity, Entity>,
+      GlobalTransientParams
+    >
   ): FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>;
 
   trait<TraitName extends string, TraitTransientParams>(
     name: TraitName,
     traitBuilderArg:
-      | EntityAttributes<Entity, GlobalTransientParams>
+      | EntityAttributes<Partial<OuterEntity>, GlobalTransientParams>
       | ((
-          builder: TraitBuilder<Entity, GlobalTransientParams>
+          builder: TraitBuilder<OuterEntity, GlobalTransientParams>
         ) => FinalBuilder<
-          TraitBuilder<Entity, GlobalTransientParams, TraitTransientParams>
+          TraitBuilder<OuterEntity, GlobalTransientParams, TraitTransientParams>
         >)
   ): FinalBuilder<
     FactoryBuilder<
-      Entity,
+      OuterEntity,
       GlobalTransientParams,
       Traits & Record<TraitName, TraitTransientParams>
     >
@@ -91,10 +115,10 @@ interface FactoryBuilder<
 
   afterCreate(
     afterCreateCallback: (
-      entity: Entity,
+      entity: OuterEntity,
       params: { transientParams: GlobalTransientParams }
     ) => void
-  ): FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>;
+  ): FinalBuilder<FactoryBuilder<OuterEntity, GlobalTransientParams, Traits>>;
 }
 
 export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
@@ -261,12 +285,16 @@ export const Factory = {
     };
 
     const factoryBuilder: FactoryBuilder<any, any, any> = {
-      attributes(params) {
-        definition.attributeDefaults = params;
+      extends(parent) {
+        console.log(parent);
         return factoryBuilder;
       },
       transient(params) {
         definition.transientParamDefaults = params;
+        return factoryBuilder;
+      },
+      attributes(params) {
+        definition.attributeDefaults = params;
         return factoryBuilder;
       },
       trait(name, traitBuilderArg) {
