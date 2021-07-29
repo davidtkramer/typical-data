@@ -319,7 +319,10 @@ export const Factory = {
           definition.transientParamDefaults = {
             ...parentDefinition.transientParamDefaults,
           };
-          definition.traits = { ...parentDefinition.traits };
+          for (let traitName in parentDefinition.traits) {
+            const trait = parentDefinition.traits[traitName];
+            definition.traits[traitName] = { ...trait };
+          }
         }
         return factoryBuilder;
       },
