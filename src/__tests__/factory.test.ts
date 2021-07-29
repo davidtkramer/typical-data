@@ -246,48 +246,52 @@ describe('buildList', () => {
 
 describe('DSL', () => {
   describe('extends', () => {
-    it('sandbox', () => {
-      interface BaseContact {
-        id: number;
-        email: string;
-        phone: string;
-      }
-      interface BusinessContact extends BaseContact {
-        businessName: string;
-      }
-
-      // type where base contact attributes are optional
-      // and business contact attributes are required
-      type CommonAttributes<Parent, Child> = Partial<
-        Pick<Child, keyof (Parent | Child)>
-      >;
-      type NewAttributes<Parent, Child> = Omit<Child, keyof Parent>;
-      type ExtendedAttributes<Parent, Child> = CommonAttributes<Parent, Child> &
-        NewAttributes<Parent, Child>;
-
-      const foo: ExtendedAttributes<unknown, BusinessContact> = {
-        id: 1,
-        email: '',
-        phone: '',
-        businessName: 'yay',
-      };
-      console.log(foo);
-    });
-
     it('can extend from other factories', () => {
+      interface Timestampable {
+        createdAt: string;
+        updatedAt: string;
+      }
+      interface Emailable {
+        email: string;
+      }
       interface BaseContact {
         id: number;
         email: string;
+        createdAt: string;
+        updatedAt: string;
       }
-      interface BusinessContact extends BaseContact {
+      interface BusinessContact {
+        id: number;
+        email: string;
         businessName: string;
+        createdAt: string;
+        updatedAt: string;
       }
 
+      const emailFactory = Factory.define((factory) =>
+        factory
+          .transient({ tld: '.com' })
+          .attributes<Emailable>({
+            email: 'email@example.com',
+          })
+          .trait('foo', { email: '' })
+      );
+      const timestampFactory = Factory.define((factory) =>
+        factory
+          .transient({ timeZone: 'America/Los_Angeles' })
+          .attributes<Timestampable>({
+            createdAt: '2021-07-22T00:00:00Z',
+            updatedAt: '2021-07-22T00:00:00Z',
+          })
+          .trait('today', { createdAt: '' })
+      );
       const parentFactory = Factory.define((factory) =>
-        factory.attributes<BaseContact>({
-          id: 1,
-          email: 'email@example.com',
-        })
+        factory
+          .extends(emailFactory, timestampFactory)
+          .attributes<BaseContact>({
+            id: 1,
+          })
+          .trait('invalidEmail', { email: 'invalid' })
       );
       const childFactory = Factory.define((factory) =>
         factory
@@ -296,7 +300,7 @@ describe('DSL', () => {
             email: 'contactus@megalomart.com',
             businessName: 'Mega Lo Mart',
           })
-          .trait('pollo', { businessName: 'foo' })
+          .trait('noEmail', { email: '' })
       );
 
       const entity = childFactory.build();

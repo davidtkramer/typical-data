@@ -5,6 +5,16 @@ type NewAttributes<Parent, Child> = Omit<Child, keyof Parent>;
 type ExtendedAttributes<Parent, Child> = CommonAttributes<Parent, Child> &
   NewAttributes<Parent, Child>;
 
+type FactoryBuilderTypesFromFactories<Factories> = Factories extends Array<
+  EntityFactory<infer Entity, infer GlobalTransientParams, infer Traits>
+>
+  ? {
+      entities: UnionToIntersection<Entity>;
+      globalTransientParams: UnionToIntersection<GlobalTransientParams>;
+      traits: UnionToIntersection<Traits>;
+    }
+  : never;
+
 type EntityAttributes<Entity, TransientParams> = {
   [Property in keyof Entity]: EntityAttribute<
     Entity,
@@ -71,15 +81,14 @@ interface FactoryBuilder<
   GlobalTransientParams = unknown,
   Traits = unknown
 > {
-  extends<ParentEntity, ParentGlobalTransientParams, ParentTraits>(
-    parent: EntityFactory<
-      ParentEntity,
-      ParentGlobalTransientParams,
-      ParentTraits
-    >
-  ): Omit<
-    FactoryBuilder<ParentEntity, ParentGlobalTransientParams, ParentTraits>,
-    'extends'
+  extends<
+    ParentFactories extends Array<EntityFactory<unknown, unknown, unknown>>
+  >(
+    ...parentFactories: ParentFactories
+  ): FactoryBuilder<
+    FactoryBuilderTypesFromFactories<ParentFactories>['entities'],
+    FactoryBuilderTypesFromFactories<ParentFactories>['globalTransientParams'],
+    FactoryBuilderTypesFromFactories<ParentFactories>['traits']
   >;
 
   transient<GlobalTransientParams>(
@@ -285,8 +294,8 @@ export const Factory = {
     };
 
     const factoryBuilder: FactoryBuilder<any, any, any> = {
-      extends(parent) {
-        console.log(parent);
+      extends(...parents: Array<any>) {
+        console.log(parents);
         return factoryBuilder;
       },
       transient(params) {
