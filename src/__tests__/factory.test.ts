@@ -246,68 +246,119 @@ describe('buildList', () => {
 
 describe('DSL', () => {
   describe('extends', () => {
-    it('can extend from other factories', () => {
-      interface Timestampable {
-        createdAt: string;
-        updatedAt: string;
+    it('can inherit attributes, transientParams, traits, and afterCreate hooks', () => {
+      interface BaseContact {
+        id: number;
+        phone: string;
+      }
+      const baseFactory = Factory.define((factory) =>
+        factory
+          .transient({
+            areaCode: 555,
+          })
+          .attributes<BaseContact>({
+            id: 1,
+            phone: ({ transientParams }) =>
+              `(${transientParams.areaCode}) 123-4567`,
+          })
+          .trait('invalidPhone', { phone: 'asdf' })
+          .afterCreate((entity) => {
+            entity.phone = entity.phone + ' x123';
+          })
+      );
+
+      interface BusinessContact extends BaseContact {
+        businessName: string;
+      }
+      const businessFactory = Factory.define((factory) =>
+        factory
+          .extends(baseFactory)
+          .transient({ upcaseName: false })
+          .attributes<BusinessContact>({
+            businessName: 'Mega Lo Mart',
+          })
+          .trait('invalidName', { businessName: '' })
+          .afterCreate((entity, { transientParams }) => {
+            if (transientParams.upcaseName) {
+              entity.businessName = entity.businessName.toUpperCase();
+            }
+          })
+      );
+
+      // inherits attributes + afterCreate hooks
+      const business1 = businessFactory.build();
+      expect(business1.id).toBe(1);
+      expect(business1.phone).toBe('(555) 123-4567 x123');
+      expect(business1.businessName).toBe('Mega Lo Mart');
+
+      // inherits transientParams + afterCreate hooks
+      const business2 = businessFactory.build({
+        areaCode: 916,
+        upcaseName: true,
+      });
+      expect(business2.phone).toBe('(916) 123-4567 x123');
+      expect(business2.businessName).toBe('MEGA LO MART');
+
+      // inherits traits
+      const business3 = businessFactory.build('invalidPhone', 'invalidName');
+      expect(business3.phone).toBe('asdf x123');
+      expect(business3.businessName).toBe('');
+    });
+
+    it('can inherit from multiple factories', () => {
+      interface Callable {
+        phone: string;
       }
       interface Emailable {
         email: string;
       }
-      interface BaseContact {
+      interface Contact {
         id: number;
         email: string;
-        createdAt: string;
-        updatedAt: string;
-      }
-      interface BusinessContact {
-        id: number;
-        email: string;
-        businessName: string;
-        createdAt: string;
-        updatedAt: string;
+        phone: string;
       }
 
       const emailFactory = Factory.define((factory) =>
         factory
           .transient({ tld: '.com' })
           .attributes<Emailable>({
-            email: 'email@example.com',
+            email: ({ transientParams }) => `email@example${transientParams.tld}`,
           })
-          .trait('foo', { email: '' })
+          .trait('emptyEmail', { email: '' })
       );
-      const timestampFactory = Factory.define((factory) =>
+      const phoneFactory = Factory.define((factory) =>
         factory
-          .transient({ timeZone: 'America/Los_Angeles' })
-          .attributes<Timestampable>({
-            createdAt: '2021-07-22T00:00:00Z',
-            updatedAt: '2021-07-22T00:00:00Z',
+          .transient({ areaCode: 555 })
+          .attributes<Callable>({
+            phone: ({ transientParams }) =>
+              `(${transientParams.areaCode}) 123-4567`,
           })
-          .trait('today', { createdAt: '' })
+          // .trait('emptyPhone', { phone: '' })
       );
-      const parentFactory = Factory.define((factory) =>
+      const contactFactory = Factory.define((factory) =>
         factory
-          .extends(emailFactory, timestampFactory)
-          .attributes<BaseContact>({
-            id: 1,
-          })
+          .extends(emailFactory, phoneFactory)
+          .attributes<Contact>({ id: 1 })
           .trait('invalidEmail', { email: 'invalid' })
       );
-      const childFactory = Factory.define((factory) =>
-        factory
-          .extends(parentFactory)
-          .attributes<BusinessContact>({
-            email: 'contactus@megalomart.com',
-            businessName: 'Mega Lo Mart',
-          })
-          .trait('noEmail', { email: '' })
-      );
 
-      const entity = childFactory.build();
-      expect(entity.id).toBe(1);
-      expect(entity.email).toBe('contactus@megalomart.com');
-      expect(entity.businessName).toBe('Mega Lo Mart');
+      // inherits attributes + transientParam defaults
+      const contact1 = contactFactory.build();
+      expect(contact1.id).toBe(1);
+      expect(contact1.email).toBe('email@example.com');
+      expect(contact1.phone).toBe('(555) 123-4567');
+
+      // can override inherited transientParams
+      const contact2 = contactFactory.build({ areaCode: 916, tld: '.org' })
+      expect(contact2.phone).toBe('(916) 123-4567');
+      expect(contact2.email).toBe('email@example.org');
+
+      // inherits traits
+      const contact3 = contactFactory.build('emptyEmail');
+
     });
+
+    it('does not share state between sibling + parent factories', () => {});
   });
 
   describe('transient', () => {
