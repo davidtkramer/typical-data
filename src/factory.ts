@@ -52,11 +52,11 @@ type AttributeBuilderParams<Entity, TransientParams> = {
   transientParams: TransientParams;
 };
 
-type TransientParamsForTraits<
+export type TransientParamsForTraits<
   Traits,
   TraitNames extends keyof Traits
-> = UnionToIntersection<Pick<Traits, TraitNames>[TraitNames]>;
-type UnionToIntersection<U> = {
+> = Intersect<Pick<Traits, TraitNames>[TraitNames]>;
+export type Intersect<U> = {
   [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
 };
 type GetKeys<U> = U extends Record<infer K, any> ? K : never;
@@ -85,6 +85,7 @@ interface TraitBuilder<
     >
   ): FinalBuilder<TraitBuilder<Entity, GlobalTransientParams, TransientParams>>;
 
+  // TODO: add support for multiple afterCreate hooks on trait
   afterCreate(
     afterCreateCallback: (
       entity: Entity,
@@ -104,9 +105,9 @@ interface FactoryBuilder<
     ...parentFactories: ParentFactories
   ): Omit<
     FactoryBuilder<
-      UnionToIntersection<EntityFromFactory<ParentFactories[number]>>,
-      UnionToIntersection<TransientParamsFromFactory<ParentFactories[number]>>,
-      UnionToIntersection<TraitsFromFactory<ParentFactories[number]>>
+      Intersect<EntityFromFactory<ParentFactories[number]>>,
+      Intersect<TransientParamsFromFactory<ParentFactories[number]>>,
+      Intersect<TraitsFromFactory<ParentFactories[number]>>
     >,
     'extends'
   >;
@@ -129,7 +130,10 @@ interface FactoryBuilder<
     >
   ): FinalBuilder<FactoryBuilder<Entity, OuterGlobalTransientParams, Traits>>;
 
-  trait<TraitName extends string, TraitTransientParams>(
+  trait<
+    TraitName extends string,
+    TraitTransientParams = {} // eslint-disable-line @typescript-eslint/ban-types
+  >(
     name: TraitName,
     traitBuilderArg:
       | EntityAttributes<Partial<OuterEntity>, OuterGlobalTransientParams>

@@ -19,6 +19,7 @@ describe('build', () => {
         name: 'Alice',
         lastHook: '',
       })
+      .trait('bob', { name: 'Bob' })
       .trait('admin', (trait) =>
         trait.attributes({
           role: 'admin',
@@ -124,7 +125,7 @@ describe('build', () => {
   });
 
   it('builds entity with multiple traits, transient params, and attribute overrides', () => {
-    const user = factory.build('owner', 'admin', 'bot', {
+    const user = factory.build('owner', 'admin', 'bot', 'bob', {
       id: 10,
       skipBotHook: true,
       skipOwnerHook: true,
@@ -133,6 +134,7 @@ describe('build', () => {
     expect(user.id).toBe(10);
     expect(user.role).toBe('admin');
     expect(user.type).toBe('bot');
+    expect(user.name).toBe('Bob');
     expect(user.lastHook).toBe('');
   });
 
@@ -262,6 +264,11 @@ describe('DSL', () => {
               `(${transientParams.areaCode}) 123-4567`,
           })
           .trait('invalidPhone', { phone: 'asdf' })
+          .trait('withCountryCode', (trait) =>
+            trait.transient({ countryCode: 1 }).afterCreate((entity) => {
+              entity.phone = `+1 ${entity.phone}`;
+            })
+          )
           .afterCreate((entity) => {
             entity.phone = entity.phone + ' x123';
           })
@@ -285,13 +292,13 @@ describe('DSL', () => {
           })
       );
 
-      // inherits attributes + afterCreate hooks
+      // inherits attributes, transientParam defaults, and afterCreate hooks
       const business1 = businessFactory.build();
       expect(business1.id).toBe(1);
       expect(business1.phone).toBe('(555) 123-4567 x123');
       expect(business1.businessName).toBe('Mega Lo Mart');
 
-      // inherits transientParams + afterCreate hooks
+      // can override inherited transientParams
       const business2 = businessFactory.build({
         areaCode: 916,
         upcaseName: true,
@@ -299,9 +306,14 @@ describe('DSL', () => {
       expect(business2.phone).toBe('(916) 123-4567 x123');
       expect(business2.businessName).toBe('MEGA LO MART');
 
-      // inherits traits
-      const business3 = businessFactory.build('invalidPhone', 'invalidName');
-      expect(business3.phone).toBe('asdf x123');
+      // inherits traits and trait transient params
+      const business3 = businessFactory.build(
+        'invalidName',
+        'invalidPhone',
+        'withCountryCode',
+        { countryCode: 1 }
+      );
+      expect(business3.phone).toBe('+1 asdf x123');
       expect(business3.businessName).toBe('');
     });
 
@@ -330,15 +342,19 @@ describe('DSL', () => {
             phone: ({ transientParams }) =>
               `(${transientParams.areaCode}) 123-4567`,
           })
-          .trait('emptyPhone', { phone: '' })
+          .trait('withExt', (trait) =>
+            trait.transient({ ext: '' }).attributes({
+              phone: ({ transientParams }) =>
+                `(${transientParams.areaCode}) 123-4567 ${transientParams.ext}`.trim(),
+            })
+          )
       );
-      const contactFactory = Factory.define((factory) => {
-        const foo = factory.extends(emailFactory, phoneFactory);
-        const bar = foo
+      const contactFactory = Factory.define((factory) =>
+        factory
+          .extends(emailFactory, phoneFactory)
           .attributes<Contact>({ id: 1 })
-          .trait('emptyEmail', { email: '' });
-        return bar;
-      });
+          .trait('emptyEmail', { email: '' })
+      );
 
       // inherits attributes + transientParam defaults
       const contact1 = contactFactory.build();
@@ -351,14 +367,101 @@ describe('DSL', () => {
       expect(contact2.phone).toBe('(916) 123-4567');
       expect(contact2.email).toBe('email@example.org');
 
-      // inherits traits
-      const contact3 = contactFactory.build('emptyPhone', 'emptyEmail');
-      expect(contact3.phone).toBe('');
+      // inherits traits + trait transient params
+      const contact3 = contactFactory.build('withExt', 'emptyEmail', {
+        ext: 'x123',
+      });
+      expect(contact3.phone).toBe('(555) 123-4567 x123');
       expect(contact3.email).toBe('');
     });
 
     it('does not share state between sibling + parent factories', () => {
-      // TODO: implement
+      interface Parent {
+        parentAttribute: number;
+        hooks: string[];
+      }
+      interface ChildOne extends Parent {
+        childOneAttribute: number;
+      }
+      interface ChildTwo extends Parent {
+        childTwoAttribute: number;
+      }
+
+      const parentFactory = Factory.define((factory) =>
+        factory
+          .transient({ parentTransientParam: 1 })
+          .attributes<Parent>({ parentAttribute: 1, hooks: () => [] })
+          .trait('parentTrait', (trait) =>
+            trait
+              .transient({ parentTraitTransientParam: 1 })
+              .afterCreate((entity) => {
+                entity.hooks.push('parentTraitHook');
+              })
+          )
+          .afterCreate((entity) => {
+            entity.hooks.push('parentHook');
+          })
+      );
+
+      const childOneFactory = Factory.define((factory) =>
+        factory
+          .extends(parentFactory)
+          .attributes<ChildOne>({ childOneAttribute: 1 })
+          .trait('parentTrait', (trait) =>
+            trait.attributes({ childOneAttribute: 2 }).afterCreate((entity) => {
+              entity.hooks.push('childOneTraitHook');
+            })
+          )
+          .afterCreate((entity) => {
+            entity.hooks.push('childOneHook');
+          })
+      );
+
+      const childTwoFactory = Factory.define((factory) =>
+        factory
+          .extends(parentFactory)
+          .attributes<ChildTwo>({ childTwoAttribute: 1 })
+          .trait('parentTrait', (trait) =>
+            trait.attributes({ childTwoAttribute: 1 }).afterCreate((entity) => {
+              entity.hooks.push('childTwoTraitHook');
+            })
+          )
+          .afterCreate((entity) => {
+            entity.hooks.push('childTwoHook');
+          })
+      );
+
+      // does not share attributes and hooks
+
+      let childOne = childOneFactory.build();
+      // @ts-expect-error childTwoAttribute should not exist
+      expect(childOne.childTwoAttribute).toBeUndefined();
+      expect(childOne.hooks).toEqual(['parentHook', 'childOneHook']);
+
+      let childTwo = childTwoFactory.build();
+      // @ts-expect-error childOneAttribute should not exist
+      expect(childTwo.childOneAttribute).toBeUndefined();
+      expect(childTwo.hooks).toEqual(['parentHook', 'childTwoHook']);
+
+      // does not share traits
+
+      childOne = childOneFactory.build('parentTrait');
+      // @ts-expect-error childTwoAttribute should not exist
+      expect(childOne.childTwoAttribute).toBeUndefined();
+      expect(childOne.hooks).toEqual([
+        'childOneTraitHook',
+        'parentHook',
+        'childOneHook',
+      ]);
+
+      childTwo = childTwoFactory.build('parentTrait');
+      // @ts-expect-error childOneAttribute should not exist
+      expect(childTwo.childOneAttribute).toBeUndefined();
+      expect(childTwo.hooks).toEqual([
+        'childTwoTraitHook',
+        'parentHook',
+        'childTwoHook',
+      ]);
     });
   });
 
