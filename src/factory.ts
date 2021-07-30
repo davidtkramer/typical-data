@@ -85,7 +85,6 @@ interface TraitBuilder<
     >
   ): FinalBuilder<TraitBuilder<Entity, GlobalTransientParams, TransientParams>>;
 
-  // TODO: add support for multiple afterCreate hooks on trait
   afterCreate(
     afterCreateCallback: (
       entity: Entity,
