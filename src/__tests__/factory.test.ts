@@ -319,12 +319,9 @@ describe('DSL', () => {
       }
 
       const emailFactory = Factory.define((factory) =>
-        factory
-          .transient({ tld: '.com' })
-          .attributes<Emailable>({
-            email: ({ transientParams }) => `email@example${transientParams.tld}`,
-          })
-          .trait('emptyEmail', { email: '' })
+        factory.transient({ tld: '.com' }).attributes<Emailable>({
+          email: ({ transientParams }) => `email@example${transientParams.tld}`,
+        })
       );
       const phoneFactory = Factory.define((factory) =>
         factory
@@ -333,14 +330,15 @@ describe('DSL', () => {
             phone: ({ transientParams }) =>
               `(${transientParams.areaCode}) 123-4567`,
           })
-          // .trait('emptyPhone', { phone: '' })
+          .trait('emptyPhone', { phone: '' })
       );
-      const contactFactory = Factory.define((factory) =>
-        factory
-          .extends(emailFactory, phoneFactory)
+      const contactFactory = Factory.define((factory) => {
+        const foo = factory.extends(emailFactory, phoneFactory);
+        const bar = foo
           .attributes<Contact>({ id: 1 })
-          .trait('invalidEmail', { email: 'invalid' })
-      );
+          .trait('emptyEmail', { email: '' });
+        return bar;
+      });
 
       // inherits attributes + transientParam defaults
       const contact1 = contactFactory.build();
@@ -349,16 +347,19 @@ describe('DSL', () => {
       expect(contact1.phone).toBe('(555) 123-4567');
 
       // can override inherited transientParams
-      const contact2 = contactFactory.build({ areaCode: 916, tld: '.org' })
+      const contact2 = contactFactory.build({ areaCode: 916, tld: '.org' });
       expect(contact2.phone).toBe('(916) 123-4567');
       expect(contact2.email).toBe('email@example.org');
 
       // inherits traits
-      const contact3 = contactFactory.build('emptyEmail');
-
+      const contact3 = contactFactory.build('emptyPhone', 'emptyEmail');
+      expect(contact3.phone).toBe('');
+      expect(contact3.email).toBe('');
     });
 
-    it('does not share state between sibling + parent factories', () => {});
+    it('does not share state between sibling + parent factories', () => {
+      // TODO: implement
+    });
   });
 
   describe('transient', () => {

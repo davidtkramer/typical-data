@@ -5,14 +5,28 @@ type NewAttributes<Parent, Child> = Omit<Child, keyof Parent>;
 type ExtendedAttributes<Parent, Child> = CommonAttributes<Parent, Child> &
   NewAttributes<Parent, Child>;
 
-type FactoryBuilderTypesFromFactories<Factories> = Factories extends Array<
-  EntityFactory<infer Entity, infer GlobalTransientParams, infer Traits>
+type EntityFromFactory<Factory> = Factory extends EntityFactory<
+  infer Entity,
+  unknown,
+  unknown
 >
-  ? {
-      entities: UnionToIntersection<Entity>;
-      globalTransientParams: UnionToIntersection<GlobalTransientParams>;
-      traits: UnionToIntersection<Traits>;
-    }
+  ? Entity
+  : never;
+
+type TransientParamsFromFactory<Factory> = Factory extends EntityFactory<
+  unknown,
+  infer TransientParams,
+  unknown
+>
+  ? TransientParams
+  : never;
+
+type TraitsFromFactory<Factory> = Factory extends EntityFactory<
+  unknown,
+  unknown,
+  infer Traits
+>
+  ? Traits
   : never;
 
 type EntityAttributes<Entity, TransientParams> = {
@@ -42,7 +56,7 @@ type TransientParamsForTraits<
   Traits,
   TraitNames extends keyof Traits
 > = UnionToIntersection<Pick<Traits, TraitNames>[TraitNames]>;
-export type UnionToIntersection<U> = {
+type UnionToIntersection<U> = {
   [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
 };
 type GetKeys<U> = U extends Record<infer K, any> ? K : never;
@@ -79,23 +93,20 @@ interface TraitBuilder<
   ): FinalBuilder<TraitBuilder<Entity, GlobalTransientParams, TransientParams>>;
 }
 
-type TraitsFromFactories<Factories> = any;
-
 interface FactoryBuilder<
   OuterEntity = unknown,
   OuterGlobalTransientParams = unknown,
-  Traits = {}
+  Traits = {} // eslint-disable-line @typescript-eslint/ban-types
 > {
   extends<
-    ParentFactories extends Array<EntityFactory<unknown, unknown, unknown>>,
-    Foo = ParentFactories[number]
+    ParentFactories extends Array<EntityFactory<unknown, unknown, unknown>>
   >(
     ...parentFactories: ParentFactories
   ): Omit<
     FactoryBuilder<
-      FactoryBuilderTypesFromFactories<ParentFactories>['entities'],
-      FactoryBuilderTypesFromFactories<ParentFactories>['globalTransientParams'],
-      FactoryBuilderTypesFromFactories<ParentFactories>['traits']
+      UnionToIntersection<EntityFromFactory<ParentFactories[number]>>,
+      UnionToIntersection<TransientParamsFromFactory<ParentFactories[number]>>,
+      UnionToIntersection<TraitsFromFactory<ParentFactories[number]>>
     >,
     'extends'
   >;
