@@ -14,7 +14,7 @@ Typical Data is a library for building and querying mock data with factories and
 ## Table of Contents
 
 - [The Problem](#the-problem)
-- [The solution](#the-solution)
+- [The Solution](#the-solution)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Factories](#factories)
