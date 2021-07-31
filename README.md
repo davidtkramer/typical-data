@@ -9,7 +9,15 @@
   <h1>Typical Data</h1>
 </div>
 
-Typical Data is a library for building and querying mock data in tests. 
+Typical Data is a library for building and querying mock data with factories and a lightweight in-memory database. Although it's designed with [Mock Service Worker](https://github.com/mswjs/msw), [React Testing Library](https://github.com/testing-library/react-testing-library), and TypeScript in mind, Typical Data can be used with any API mocking or testing framework.
+
+## The Problem
+
+[Mock Service Worker](https://github.com/mswjs/msw) makes it easy to create mock APIs and helps you avoid testing implementation details by eliminating repetitive request mocking in your tests. But removing API mocking from your tests can make it harder to customize the data returned by your API on test-by-test basis. Hard-coded fixtures can be cumbersome and endpoint overriding is verbose and re-introduces api mocking into your tests.
+
+## The Solution
+
+Typical Data helps bridge the gap between your tests and your mock API. This library provides an expressive factory DSL for creating objects, and an in-memory database for querying and mutating those objects in your mock API.
 
 ## Installation
 
@@ -25,7 +33,7 @@ yarn add --dev typical-data
 
 ## Quick Start
 
-Define a factory 
+Define a factory for creating an object.
 
 ```typescript
 import { Factory } from 'typical-data';
@@ -42,7 +50,7 @@ const contactFactory = Factory.define(factory =>
 );
 ```
 
-Register factories with the database.
+Create a database with factories.
 
 ```typescript
 import { Database } from 'typical-data';
@@ -56,7 +64,7 @@ const db = Database.create({
 })
 ```
 
-Create and query data in your mock API. Example with Mock Service Worker:
+Now you can create and query data in your mock API and in your tests. Example with Mock Service Worker and React Testing Library:
 
 ```typescript
 setupServer(
@@ -84,5 +92,19 @@ setupServer(
   }),
 )
 ```
+```typescript
+it('fetches and displays an individual contact info', async () => {
+  const contact = db.contacts.create({
+    name: 'Alice',
+    email: 'test@example.com',
+    phone: '(555) 248-1632'
+  });
 
+  await render(<ContactDetails id={contact.id} />);
+  
+  await screen.findByText(contact.name);
+  screen.getByText(contact.email);
+  screen.getByText(contact.phone);
+});
+```
 
