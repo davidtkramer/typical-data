@@ -529,7 +529,12 @@ db.contacts.length // 2
 
 ### Querying
 
+Support for database-like querying is on the roadmap. For now, the object stores are just extended JavaScript arrays, so you can use normal array methods to find and manipulate data.
 
+```typescript
+db.users.find(user => user.id === id);
+db.users.filter(user => user.type === 'admin');
+```
 
 ### Reset
 
