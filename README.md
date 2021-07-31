@@ -338,7 +338,33 @@ users.posts.length // 5
 
 ### After Create Hooks
 
-After create hooks allow you to run custom logic after an entity has been created.
+After create hooks allow you to run custom logic after an entity has been created. The created entity is passed to the callback as well as transientParams.
+
+```typescript
+const contactFactory = Factory.define(factory =>
+  factory
+    .transient({ upcaseName: false })
+    .attributes<Contact>({
+      id: 1,
+      email: 'email@example.com',
+      phone: '(555) 123,4567',
+      name: 'Alice',
+    })
+    .afterCreate((entity, { transientParams }) => {
+      if (transientParams.upcaseName) {
+        entity.name = entity.name.toUpperCase();
+      }
+    })
+);
+
+// no overrides provided, will use default transient param values
+contactFactory.build()
+contact.name  // 'Alice'
+
+// will use provided transient params
+contactFactory.build({ upcaseName: true })
+contact.name  // 'ALICE'
+```
 
 ### Extending Factories
 
