@@ -211,9 +211,7 @@ const contactFactory = createFactory<Contact>({
 });
 ```
 
-> Providing an explicit type argument to `createFactory` will enable type-checking in the factory definition and when building objects.
-
-The build method accepts attributes that will override the defaults defined on the factory
+The build method accepts attributes that will override the defaults defined on the factory.
 
 ```typescript
 const businessContact = contactFactory.build({
@@ -222,11 +220,11 @@ const businessContact = contactFactory.build({
 });
 ```
 
-> Note: Typing for the build method requires TypeScript >= 4.0.0 due to the use of variadic tuple types
+> Providing an explicit type argument to `createFactory` will enable type-checking in the factory definition and when building objects. Types for the build method require TypeScript >= 4.0.0 due to the use of variadic tuple types.
 
 ### Sequences
 
-A sequence is an integer that increments on each invocation of the factory `build`  or `buildList` method. This is helpful for generating unique IDs or varying the data returned by the factory.
+A sequence is an integer that increments on each invocation of the factory `build` or `buildList` method. This is helpful for generating unique IDs or varying the data returned by the factory.
 
 ```typescript
 const contactFactory = createFactory<Contact>({
