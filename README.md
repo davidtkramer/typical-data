@@ -152,7 +152,7 @@ Factories provide a flexible DSL to customize how your objects are created. Fact
 
 ### Attributes
 
-This simplest factory defines default attributes for an object. Providing an explicit type to the `attributes` method will enable type-checking in the factory definition and when building objects.
+A factory defines default attributes for an object. Providing an explicit type to the `attributes` method will enable type-checking in the factory definition and when building objects.
 
 ```typescript
 import { Factory } from 'typical-data';
