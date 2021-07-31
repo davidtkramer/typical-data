@@ -448,7 +448,7 @@ const businessContactFactory = Factory.define((factory) =>
 
 ### Fixtures
 
-You can seed your database with pre-defined objects using the `fixtures` option. This callback accepts a function that is passed the database instance.
+You can seed your database with pre-defined objects using the `fixtures` option. This option accepts a callback function that will be passed the database instance.
 
 The fixtures method can optionally return an object of 'named' fixtures. These fixtures are made accessible on the `db.fixtures` property.
 
