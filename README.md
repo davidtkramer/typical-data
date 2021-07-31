@@ -34,7 +34,7 @@ Typical Data is a library for building and querying mock data with factories and
 
 ## The Problem
 
-[Mock Service Worker](https://github.com/mswjs/msw) makes it easy to create mock APIs and helps you avoid testing implementation details by eliminating repetitive request mocking in your tests. But removing API mocking from your tests can make it harder to customize the data returned by your API on test-by-test basis. Hard-coded fixtures can be cumbersome and endpoint overriding is verbose and re-introduces api mocking into your tests.
+[Mock Service Worker](https://github.com/mswjs/msw) makes it easy to create mock APIs and helps you avoid testing implementation details by eliminating repetitive request mocking in your tests. But removing API mocking from your tests can make it harder to customize the data returned by your API on a test-by-test basis. Hard-coded fixtures can be cumbersome and endpoint overriding is verbose and re-introduces api mocking into your tests.
 
 ## The Solution
 
