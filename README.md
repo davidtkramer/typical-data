@@ -253,7 +253,7 @@ contact.name  // 'alice'
 Traits allow you to group attributes together and apply them by passing the trait name to the `build` method.
 
 ```typescript
-const contactFactory = Factory.define((factory) =>
+const userFactory = Factory.define((factory) =>
   factory
     .attributes<User>({
       id: 1,
@@ -268,18 +268,51 @@ const contactFactory = Factory.define((factory) =>
       isAdmin: true,
     })
     .trait('inactive', {
-      isActive: false
+      isActive: false,
     })
 );
 
-const adminContact = contactFactory.build('admin');
-contact.type    // 'admin'
-contact.isAdmin // true
+const adminUser = userFactory.build('admin');
+user.type; // 'admin'
+user.isAdmin; // true
 
-const inactiveAdminContact = contactFactory.build('inactive', 'admin');
-contact.type     // 'admin'
-contact.isAdmin  // true
-contact.isActive // false
+const inactiveUserContact = userFactory.build('inactive', 'admin');
+user.type; // 'admin'
+user.isAdmin; // true
+user.isActive; // false
+```
+
+Traits can define their own transient params and after create hooks using the alternative builder syntax.
+
+```typescript
+import { postFactory } from './post-factory';
+
+const userFactory = Factory.define((factory) =>
+  factory
+    .attributes<User>({
+      id: 1,
+      email: 'email@example.com',
+      name: 'Alice',
+      type: 'admin',
+      posts: () => []
+    })
+    .trait('withPosts', trait =>
+      trait
+        .transient({ postCount: 0 })
+        .attributes({
+          type: 'author'
+        })
+        .afterCreate((entity, { transientParams }) => {
+          const { postCount } = transientParams;
+          for (let i = 0; i < postCount; i++) {
+            entity.posts.push(...postFactory.buildList(postCount))
+          }
+        })
+    })
+);
+
+const user = userFactory.build('withPosts', { postCount: 5 })
+users.posts.length // 5
 ```
 
 ### After Create Hooks
