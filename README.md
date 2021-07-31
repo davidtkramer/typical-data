@@ -75,10 +75,10 @@ const contactFactory = Factory.define((factory) =>
 Create a database with factories.
 
 ```typescript
-import { Database } from 'typical-data';
+import { createDatabase } from 'typical-data';
 import { contactFactory, userFactory } from './factories';
 
-const db = Database.create({
+const db = createDatabase({
   factories: {
     contacts: contactFactory,
     users: userFactory,
@@ -449,10 +449,10 @@ const businessContactFactory = Factory.define((factory) =>
 Databases are created by passing factories to the `factories` config option.
 
 ```typescript
-import { Database } from 'typical-data';
+import { createDatabase } from 'typical-data';
 import { userFactory, contactFactory } from './factories';
 
-const db = Database.create({
+const db = createDatabase({
   factories: {
     users: userFactory,
     contacts: contactFactory,
@@ -473,7 +473,7 @@ const contact = db.users.find((contact) => contact.name === 'Bob');
 Factories can be [extended](#extending-factories) to model inheritance relationships. To store child objects in the same "table", for example to model single-table inheritance, you can nest child factories under a shared key. In the example below, both individual and business contacts will be persisted in `db.contacts`.
 
 ```typescript
-const db = Database.create({
+const db = createDatabase({
   contacts: {
     individual: individualContactFactory,
     business: businessContactFactory,
@@ -492,7 +492,7 @@ You can seed your database with pre-defined objects using the `fixtures` option.
 The fixtures method can optionally return an object of 'named' fixtures. These fixtures are made accessible on the `db.fixtures` property.
 
 ```typescript
-const db = Database.create({
+const db = createDatabase({
   factories: {
     tenants: tenantFactory,
     users: userFactory,
@@ -515,7 +515,7 @@ const { currentUser } = db.fixtures.users;
 If you don't need direct access to the fixtures, you can just create objects in the fixtures method and return nothing.
 
 ```typescript
-const db = Database.create({
+const db = createDatabase({
   factories: {
     contacts: contactFactory,
   },
