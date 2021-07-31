@@ -448,6 +448,44 @@ const businessContactFactory = Factory.define((factory) =>
 
 ### Fixtures
 
+You can seed your database with pre-defined objects using the `fixtures` option. This callback accepts a function that is passed the database instance.
+
+The fixtures method can optionally return an object of 'named' fixtures. These fixtures are made accessible on the `db.fixtures` property.
+
+```typescript
+const db = Database.create({
+  factories: {
+    tenants: tenantFactory,
+    users: userFactory,
+    contacts: contactFactory,
+  },
+  fixtures(self) {
+    const currentTenant = self.tenants.create();
+    const currentUser = self.users.create({ tenantId: currentTenant.id });
+    return {
+      tenants: { currentTenant }
+      users: { currentUser }
+    }
+  }
+})
+
+const { currentTenant } = db.fixtures.tenants;
+const { currentUser } = db.fixtures.users;
+```
+
+If you don't need direct access to the fixtures, you can just create objects in the fixtures method and return nothing.
+
+```typescript
+const db = Database.create({
+  factories: {
+    contacts: contactFactory,
+  },
+  fixtures(self) {
+    self.contacts.createList(10);
+  }
+})
+```
+
 ### Inheritance
 
 ### Reset
