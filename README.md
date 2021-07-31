@@ -149,7 +149,7 @@ it('creates a contact', async () => {
 
 Factories provide a flexible DSL to customize how your objects are created. Factories are designed to integrate with a [database](#database), but can also be used standalone.
 
-Factories are created using the `createFactory` function. It supports two different forms to define factories: an "attributes" notation and a "builder callback" notation. The "attributes" notation lets you quickly define simple attribute-only factories. The "builder callback" notation lets you define more complex factories with attributes, [inheritance](#extending-factories), [transient params](#transient-params), [traits](#traits), and [afterBuild](#after-build-hooks) hooks.
+Factories are created using the `createFactory` function. It supports two different forms to define factories: an "attributes" notation and a "builder callback" notation. The "attributes" notation lets you define factories that just specify attributes. The "builder callback" notation lets you define more complex factories with attributes, [inheritance](#extending-factories), [transient params](#transient-params), [traits](#traits), and [afterBuild](#after-build-hooks) hooks.
 
 #### Attributes Notation
 
@@ -591,4 +591,5 @@ beforeEach(() => {
 ## Credits
 
 - The factory DSL is modeled after the [Factory Bot](https://github.com/thoughtbot/factory_bot) gem.
+- The factory builder callback notation is based on the [Redux Toolkit](https://redux-toolkit.js.org/api/createreducer) `createReducer` helper.
 - The idea for an in-memory database composed of factories came from [Mirage JS](https://miragejs.com/).
