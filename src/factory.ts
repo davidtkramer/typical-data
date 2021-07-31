@@ -221,10 +221,16 @@ interface FactoryDefinition {
   sequence: { count: number };
 }
 
-export function createFactory<Entity, GlobalTransientParams, Traits>(
-  factoryBuilderCallback: (
-    builder: FactoryBuilder
-  ) => FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>
+export function createFactory<
+  Entity,
+  GlobalTransientParams = unknown,
+  Traits = unknown // eslint-disable-line @typescript-eslint/ban-types
+>(
+  attributesOrBuilder:
+    | EntityAttributes<Entity, GlobalTransientParams>
+    | ((
+        builder: FactoryBuilder
+      ) => FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>)
 ): EntityFactory<Entity, GlobalTransientParams, Traits> {
   const definition: FactoryDefinition = {
     attributeDefaults: {},
@@ -338,68 +344,71 @@ export function createFactory<Entity, GlobalTransientParams, Traits>(
     },
   };
 
-  const factoryBuilder: FactoryBuilder<any, any, any> = {
-    extends(...parents: Array<EntityFactory<any, any, any>>) {
-      for (let parent of parents) {
-        const parentDefinition = parent.getDefinition();
-        definition.attributeDefaults = {
-          ...definition.attributeDefaults,
-          ...parentDefinition.attributeDefaults,
-        };
-        definition.transientParamDefaults = {
-          ...definition.transientParamDefaults,
-          ...parentDefinition.transientParamDefaults,
-        };
-        for (let traitName in parentDefinition.traits) {
-          const trait = parentDefinition.traits[traitName];
-          definition.traits[traitName] = { ...trait };
+  if (typeof attributesOrBuilder === 'function') {
+    const factoryBuilder: FactoryBuilder<any, any, any> = {
+      extends(...parents: Array<EntityFactory<any, any, any>>) {
+        for (let parent of parents) {
+          const parentDefinition = parent.getDefinition();
+          definition.attributeDefaults = {
+            ...definition.attributeDefaults,
+            ...parentDefinition.attributeDefaults,
+          };
+          definition.transientParamDefaults = {
+            ...definition.transientParamDefaults,
+            ...parentDefinition.transientParamDefaults,
+          };
+          for (let traitName in parentDefinition.traits) {
+            const trait = parentDefinition.traits[traitName];
+            definition.traits[traitName] = { ...trait };
+          }
+          definition.afterBuildHooks.push(...parentDefinition.afterBuildHooks);
         }
-        definition.afterBuildHooks.push(...parentDefinition.afterBuildHooks);
-      }
-      return factoryBuilder;
-    },
-    transient(params) {
-      Object.assign(definition.transientParamDefaults, params);
-      return factoryBuilder;
-    },
-    attributes(params) {
-      Object.assign(definition.attributeDefaults, params);
-      return factoryBuilder;
-    },
-    trait(name, traitBuilderArg) {
-      definition.traits[name] = {
-        attributeDefaults: {},
-        transientParamDefaults: {},
-        afterBuildHooks: [],
-      };
-      if (typeof traitBuilderArg === 'function') {
-        const traitBuilder: TraitBuilder<any, any, any> = {
-          attributes(attributes) {
-            definition.traits[name].attributeDefaults = attributes;
-            return traitBuilder;
-          },
-          transient(params) {
-            definition.traits[name].transientParamDefaults = params;
-            return traitBuilder;
-          },
-          afterBuild(afterBuildCallback) {
-            definition.traits[name].afterBuildHooks.push(afterBuildCallback);
-            return traitBuilder;
-          },
+        return factoryBuilder;
+      },
+      transient(params) {
+        Object.assign(definition.transientParamDefaults, params);
+        return factoryBuilder;
+      },
+      attributes(params) {
+        Object.assign(definition.attributeDefaults, params);
+        return factoryBuilder;
+      },
+      trait(name, traitBuilderArg) {
+        definition.traits[name] = {
+          attributeDefaults: {},
+          transientParamDefaults: {},
+          afterBuildHooks: [],
         };
-        traitBuilderArg(traitBuilder);
-      } else {
-        definition.traits[name].attributeDefaults = traitBuilderArg;
-      }
-      return factoryBuilder;
-    },
-    afterBuild(afterBuildCallback) {
-      definition.afterBuildHooks.push(afterBuildCallback);
-      return factoryBuilder;
-    },
-  };
-
-  factoryBuilderCallback(factoryBuilder);
+        if (typeof traitBuilderArg === 'function') {
+          const traitBuilder: TraitBuilder<any, any, any> = {
+            attributes(attributes) {
+              definition.traits[name].attributeDefaults = attributes;
+              return traitBuilder;
+            },
+            transient(params) {
+              definition.traits[name].transientParamDefaults = params;
+              return traitBuilder;
+            },
+            afterBuild(afterBuildCallback) {
+              definition.traits[name].afterBuildHooks.push(afterBuildCallback);
+              return traitBuilder;
+            },
+          };
+          traitBuilderArg(traitBuilder);
+        } else {
+          definition.traits[name].attributeDefaults = traitBuilderArg;
+        }
+        return factoryBuilder;
+      },
+      afterBuild(afterBuildCallback) {
+        definition.afterBuildHooks.push(afterBuildCallback);
+        return factoryBuilder;
+      },
+    };
+    attributesOrBuilder(factoryBuilder);
+  } else {
+    definition.attributeDefaults = attributesOrBuilder;
+  }
 
   return factory;
 }

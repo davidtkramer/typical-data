@@ -492,6 +492,17 @@ describe('DSL', () => {
   });
 
   describe('attributes', () => {
+    it('can use shorthand syntax for attribute-only factories', () => {
+      const userFactory = createFactory<{ id: number; name: string }>({
+        id: 1,
+        name: 'name',
+      });
+
+      const user = userFactory.build();
+      expect(user.id).toBe(1);
+      expect(user.name).toBe('name');
+    });
+
     it('can use sequence in attribute builder', () => {
       const factory = createFactory((factory) =>
         factory.attributes<{ id: number }>({
