@@ -375,7 +375,11 @@ Sharing logic
 ```typescript
 const phoneFactory = Factory.define((factory) =>
   factory.transient({ areaCode: 555 }).attributes<{ phone: string }>({
-    phone: ({ transientParams }) => `(${transientParams.areaCode}) 123-4567`,
+    countryCode: 1,
+    phoneNumber({ transientParams }) {
+      return `(${transientParams.areaCode}) 123-4567`;
+    },
+    extension: '248',
   })
 );
 
@@ -415,7 +419,7 @@ Inheritance
 
 ```typescript
 interface BaseContact {
-  id: 1;
+  id: number;
   email: string;
 }
 interface BusinessContact extends BaseContact {
@@ -452,7 +456,3 @@ const businessContactFactory = Factory.define((factory) =>
 
 - The factory DSL is modeled after the [Factory Bot](https://github.com/thoughtbot/factory_bot) gem.
 - The idea for an in-memory database composed of factories came from [Mirage JS](https://miragejs.com/)
-
-```
-
-```
