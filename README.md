@@ -43,7 +43,7 @@ const contactFactory = Factory.define(factory =>
   factory
     .attributes<Contact>({
       id: ({ sequence }) => sequence,
-      email: 'email@exmaple.com',
+      email: 'email@example.com',
       phone: '(555) 123-4567',
       name: 'name',
     })
@@ -54,7 +54,7 @@ Create a database with factories.
 
 ```typescript
 import { Database } from 'typical-data';
-import { contactFactory, userFactory } from './factories'; 
+import { contactFactory, userFactory } from './factories';
 
 const db = Database.create({
   factories: {
@@ -83,12 +83,12 @@ setupServer(
     const { id } = req.params;
 
     const contact = db.contacts.find(contact => contact.id === id);
-    
+
     if (!contact) {
       return res(ctx.status(404));
     } else {
       return res(ctx.json({ contact });
-    }  
+    }
   }),
 )
 ```
@@ -101,7 +101,7 @@ it('fetches and displays contact info', async () => {
   });
 
   await render(<ContactDetails id={contact.id} />);
-  
+
   await screen.findByText(contact.name);
   screen.getByText(contact.email);
   screen.getByText(contact.phone);
@@ -110,7 +110,72 @@ it('fetches and displays contact info', async () => {
 
 ## Factories
 
+Factories provide a flexible DSL to customize how your objects are created. Factories can be used standalone or in combination with a database.
+
 ### Attributes
+
+This simplest factory defines default attributes for an object. Providing an explicit type to the `attributes` method will enable type-checking in the factory definition and when building objects.
+
+```typescript
+import { Factory } from 'typical-data';
+import { Contact } from './your-types';
+
+const contactFactory = Factory.define(factory =>
+  factory
+    .attributes<Contact>({
+      id: 1,
+      type: 'individual',
+      phone: '(555) 123-4567',
+      name: 'Alice',
+    })
+);
+
+const contact = contactFactory.build();
+```
+
+The build method accepts attributes that will override the defaults defined on the factory
+
+```typescript
+const businessContact = contactFactory.build({ type: 'business', name: 'Mega Lo Mart' });
+```
+
+> Note: Typing for the build method requires TypeScript >= 4.0.0 due to the use of variadic tuple types
+
+### Sequences
+
+A sequence is an integer that increments on each invocation of the factory `build` method. This is helpful for generating unique IDs or varying the data returned by the factory.
+
+```typescript
+const contactFactory = Factory.define(factory =>
+  factory
+    .attributes<Contact>({
+      id({ sequence }) {
+        return sequence;
+      },
+      type({ sequence }) {
+        const types = ['individual', 'business'];
+        return types[sequence % 2];
+      },
+      phone: '(555) 123-4567',
+      name: 'Alice',
+    })
+);
+
+const contact1 = contactFactory.build();
+contact1.id // 0
+contact1.type // individual
+const contact2 = contactFactory.build();
+contact2.id // 1
+contact2.type // business
+```
+
+Sequences can be reset back to 0 with the `rewindSequence` method.
+
+```typescript
+contactFactory.rewindSequence();
+```
+
+### Dependent Fields
 
 ### Transient Params
 
@@ -128,4 +193,4 @@ it('fetches and displays contact info', async () => {
 
 ### Handling Extended Factories
 
-### Resetting 
+### Resetting
