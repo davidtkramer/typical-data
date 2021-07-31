@@ -11,6 +11,27 @@
 
 Typical Data is a library for building and querying mock data with factories and a lightweight in-memory database. Although it's designed with [Mock Service Worker](https://github.com/mswjs/msw), [React Testing Library](https://github.com/testing-library/react-testing-library), and TypeScript in mind, Typical Data can be used with any API mocking or testing framework.
 
+## Table of Contents
+
+- [The Problem](#the-problem)
+- [The solution](#the-solution)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Factories](#factories)
+  - [Attributes](#attributes)
+  - [Sequences](#sequences)
+  - [Dependent Attributes](#dependent-attributes)
+  - [Transient Params](#transient-params)
+  - [Traits](#traits)
+  - [After Create Hooks](#after-create-hooks)
+  - [Extending Factories](#extending-factories)
+- [Database](#database)
+  - [Creating a Database](#creating-a-database)
+  - [Fixtures](#fixtures)
+  - [Inheritance](#inheritance)
+  - [Reset](#reset)
+- [Credits](#credits)
+
 ## The Problem
 
 [Mock Service Worker](https://github.com/mswjs/msw) makes it easy to create mock APIs and helps you avoid testing implementation details by eliminating repetitive request mocking in your tests. But removing API mocking from your tests can make it harder to customize the data returned by your API on test-by-test basis. Hard-coded fixtures can be cumbersome and endpoint overriding is verbose and re-introduces api mocking into your tests.
@@ -325,11 +346,11 @@ users.posts.length // 5
 
 ### Fixtures
 
-### Handling Extended Factories
+### Inheritance
 
-### Resetting
+### Reset
 
-## Credits/Insipiration
+## Credits
 
 - The factory DSL is modeled after the [Factory Bot](https://github.com/thoughtbot/factory_bot) gem.
 - The idea for an in-memory database composed of factories came from [Mirage JS](https://miragejs.com/)
