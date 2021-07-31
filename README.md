@@ -488,7 +488,7 @@ const db = Database.create({
 
 ### Inheritance
 
-Factories can be [extended](#extending-factories) to model inheritance relationships. To store child objects in the same "table", for example to model single-table inheritance, you can nest child factories under a shared key. In the example below, both individual and business contacts will be persisted in `db.contacts`
+Factories can be [extended](#inheritance) to model inheritance relationships. To store child objects in the same "table", for example to model single-table inheritance, you can nest child factories under a shared key. In the example below, both individual and business contacts will be persisted in `db.contacts`
 
 ```typescript
 const db = Database.create({
