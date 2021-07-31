@@ -1,5 +1,5 @@
 import { createDatabase } from '../database';
-import { Factory } from '../factory';
+import { createFactory } from '../factory';
 
 interface User {
   id: number;
@@ -7,7 +7,7 @@ interface User {
   isAdmin: boolean;
 }
 
-const userFactory = Factory.define((factory) =>
+const userFactory = createFactory((factory) =>
   factory
     .transient({
       foo: 'foo',
@@ -66,14 +66,14 @@ describe('Database factory', () => {
       const db = createDatabase({
         factories: {
           contacts: {
-            individual: Factory.define((factory) =>
+            individual: createFactory((factory) =>
               factory.attributes<IndividualContact>({
                 id: ({ sequence }) => sequence,
                 type: 'individual',
                 fullName: 'Alice',
               })
             ),
-            business: Factory.define((factory) =>
+            business: createFactory((factory) =>
               factory.attributes<BusinessContact>({
                 id: ({ sequence }) => sequence,
                 type: 'business',

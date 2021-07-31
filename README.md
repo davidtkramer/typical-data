@@ -59,10 +59,10 @@ yarn add --dev typical-data
 Define a factory for creating an object.
 
 ```typescript
-import { Factory } from 'typical-data';
+import { createFactory } from 'typical-data';
 import { Contact } from './your-types';
 
-const contactFactory = Factory.define((factory) =>
+const contactFactory = createFactory((factory) =>
   factory.attributes<Contact>({
     id: ({ sequence }) => sequence,
     email: 'email@example.com',
@@ -155,10 +155,10 @@ Factories provide a flexible DSL to customize how your objects are created. Fact
 A factory defines default attributes for an object. Providing an explicit type to the `attributes` method will enable type-checking in the factory definition and when building objects.
 
 ```typescript
-import { Factory } from 'typical-data';
+import { createFactory } from 'typical-data';
 import { Contact } from './your-types';
 
-const contactFactory = Factory.define((factory) =>
+const contactFactory = createFactory((factory) =>
   factory.attributes<Contact>({
     id: 1,
     type: 'individual',
@@ -186,7 +186,7 @@ const businessContact = contactFactory.build({
 A sequence is an integer that increments on each invocation of the factory `build` method. This is helpful for generating unique IDs or varying the data returned by the factory.
 
 ```typescript
-const contactFactory = Factory.define((factory) =>
+const contactFactory = createFactory((factory) =>
   factory.attributes<Contact>({
     id({ sequence }) {
       return sequence;
@@ -219,7 +219,7 @@ contactFactory.rewindSequence();
 Attributes can be derived from other attributes with the `params` option.
 
 ```typescript
-const userFactory = Factory.define((factory) =>
+const userFactory = createFactory((factory) =>
   factory.attributes<User>({
     id: 1,
     firstName: 'Alice',
@@ -240,7 +240,7 @@ Transient params are arguments that can be passed to the build method that are n
 The `transient` method defines the default values for transient params. The types for transient params are inferred by the compiler and will be type-safe in the build method, just like regular attributes.
 
 ```typescript
-const contactFactory = Factory.define(factory =>
+const contactFactory = createFactory(factory =>
   factory
     .transient({ areaCode: 555, downcaseName: false })
     .attributes<Contact>({
@@ -274,7 +274,7 @@ contact.name  // 'alice'
 Traits allow you to group attributes together and apply them by passing the trait name to the `build` method.
 
 ```typescript
-const userFactory = Factory.define((factory) =>
+const userFactory = createFactory((factory) =>
   factory
     .attributes<User>({
       id: 1,
@@ -308,7 +308,7 @@ Traits can define their own transient params and after create hooks using the al
 ```typescript
 import { postFactory } from './post-factory';
 
-const userFactory = Factory.define((factory) =>
+const userFactory = createFactory((factory) =>
   factory
     .attributes<User>({
       id: 1,
@@ -341,7 +341,7 @@ users.posts.length // 5
 After create hooks allow you to run custom logic after an entity has been created. The created entity is passed to the callback as well as any transient params.
 
 ```typescript
-const contactFactory = Factory.define((factory) =>
+const contactFactory = createFactory((factory) =>
   factory
     .transient({ upcaseName: false })
     .attributes<Contact>({
@@ -373,7 +373,7 @@ Factories can extend from one or more parent factories. This is helpful for shar
 #### Sharing logic
 
 ```typescript
-const phoneFactory = Factory.define((factory) =>
+const phoneFactory = createFactory((factory) =>
   factory.transient({ areaCode: 555 }).attributes<{ phone: string }>({
     countryCode: 1,
     phoneNumber({ transientParams }) {
@@ -383,7 +383,7 @@ const phoneFactory = Factory.define((factory) =>
   })
 );
 
-const timestampFactory = Factory.define((factory) =>
+const timestampFactory = createFactory((factory) =>
   factory
     .transient({ timeZone: 'UTC' })
     .attributes<{ createdAt: string; updatedAt: string }>({
@@ -396,7 +396,7 @@ const timestampFactory = Factory.define((factory) =>
     })
 );
 
-const contactFactory = Factory.define((factory) =>
+const contactFactory = createFactory((factory) =>
   factory.extends(phoneFactory, timestampFactory).attributes<{
     id: number;
     name: string;
@@ -426,14 +426,14 @@ interface BusinessContact extends BaseContact {
   businessName: string;
 }
 
-const baseContactFactory = Factory.define((factory) =>
+const baseContactFactory = createFactory((factory) =>
   factory.attributes<BaseContact>({
     id: 1,
     email: 'email@example.com',
   })
 );
 
-const businessContactFactory = Factory.define((factory) =>
+const businessContactFactory = createFactory((factory) =>
   factory.attributes<BusinessContact>({
     businessName: 'Mega Lo Mart',
   })
