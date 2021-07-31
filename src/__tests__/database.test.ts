@@ -1,5 +1,5 @@
-import { Database } from '../database';
-import { Factory } from '../factory';
+import { createDatabase } from '../database';
+import { createFactory } from '../factory';
 
 interface User {
   id: number;
@@ -7,7 +7,7 @@ interface User {
   isAdmin: boolean;
 }
 
-const userFactory = Factory.define((factory) =>
+const userFactory = createFactory((factory) =>
   factory
     .transient({
       foo: 'foo',
@@ -27,7 +27,7 @@ const userFactory = Factory.define((factory) =>
 describe('Database factory', () => {
   describe('create', () => {
     it('loads unnamed fixtures on creation', () => {
-      const db = Database.create({
+      const db = createDatabase({
         factories: { users: userFactory },
         fixtures({ users }) {
           users.create();
@@ -39,7 +39,7 @@ describe('Database factory', () => {
     });
 
     it('loads named fixtures on creation', () => {
-      const db = Database.create({
+      const db = createDatabase({
         factories: { users: userFactory },
         fixtures({ users }) {
           return {
@@ -63,17 +63,17 @@ describe('Database factory', () => {
         businessName: string;
       }
 
-      const db = Database.create({
+      const db = createDatabase({
         factories: {
           contacts: {
-            individual: Factory.define((factory) =>
+            individual: createFactory((factory) =>
               factory.attributes<IndividualContact>({
                 id: ({ sequence }) => sequence,
                 type: 'individual',
                 fullName: 'Alice',
               })
             ),
-            business: Factory.define((factory) =>
+            business: createFactory((factory) =>
               factory.attributes<BusinessContact>({
                 id: ({ sequence }) => sequence,
                 type: 'business',
@@ -116,7 +116,7 @@ describe('Database factory', () => {
 describe('database instance', () => {
   describe('reset', () => {
     it('resets entities and fixtures', () => {
-      const db = Database.create({
+      const db = createDatabase({
         factories: { users: userFactory },
         fixtures({ users }) {
           return {
@@ -137,7 +137,7 @@ describe('database instance', () => {
 });
 
 describe('entity store', () => {
-  const db = Database.create({
+  const db = createDatabase({
     factories: {
       users: userFactory,
     },

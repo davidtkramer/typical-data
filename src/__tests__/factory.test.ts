@@ -1,7 +1,7 @@
-import { Factory } from '../factory';
+import { createFactory } from '../factory';
 
 describe('build', () => {
-  const factory = Factory.define((factory) =>
+  const factory = createFactory((factory) =>
     factory
       .transient({
         skipGlobalHook: false,
@@ -180,7 +180,7 @@ describe('build', () => {
 });
 
 describe('buildList', () => {
-  const factory = Factory.define((factory) =>
+  const factory = createFactory((factory) =>
     factory
       .attributes<{
         id: number;
@@ -256,7 +256,7 @@ describe('DSL', () => {
         id: number;
         phone: string;
       }
-      const baseFactory = Factory.define((factory) =>
+      const baseFactory = createFactory((factory) =>
         factory
           .transient({
             areaCode: 555,
@@ -280,7 +280,7 @@ describe('DSL', () => {
       interface BusinessContact extends BaseContact {
         businessName: string;
       }
-      const businessFactory = Factory.define((factory) =>
+      const businessFactory = createFactory((factory) =>
         factory
           .extends(baseFactory)
           .transient({ upcaseName: false })
@@ -333,12 +333,12 @@ describe('DSL', () => {
         phone: string;
       }
 
-      const emailFactory = Factory.define((factory) =>
+      const emailFactory = createFactory((factory) =>
         factory.transient({ tld: '.com' }).attributes<Emailable>({
           email: ({ transientParams }) => `email@example${transientParams.tld}`,
         })
       );
-      const phoneFactory = Factory.define((factory) =>
+      const phoneFactory = createFactory((factory) =>
         factory
           .transient({ areaCode: 555 })
           .attributes<Callable>({
@@ -352,7 +352,7 @@ describe('DSL', () => {
             })
           )
       );
-      const contactFactory = Factory.define((factory) =>
+      const contactFactory = createFactory((factory) =>
         factory
           .extends(emailFactory, phoneFactory)
           .attributes<Contact>({ id: 1 })
@@ -390,7 +390,7 @@ describe('DSL', () => {
         childTwoAttribute: number;
       }
 
-      const parentFactory = Factory.define((factory) =>
+      const parentFactory = createFactory((factory) =>
         factory
           .transient({ parentTransientParam: 1 })
           .attributes<Parent>({ parentAttribute: 1, hooks: () => [] })
@@ -406,7 +406,7 @@ describe('DSL', () => {
           })
       );
 
-      const childOneFactory = Factory.define((factory) =>
+      const childOneFactory = createFactory((factory) =>
         factory
           .extends(parentFactory)
           .attributes<ChildOne>({ childOneAttribute: 1 })
@@ -420,7 +420,7 @@ describe('DSL', () => {
           })
       );
 
-      const childTwoFactory = Factory.define((factory) =>
+      const childTwoFactory = createFactory((factory) =>
         factory
           .extends(parentFactory)
           .attributes<ChildTwo>({ childTwoAttribute: 1 })
@@ -471,7 +471,7 @@ describe('DSL', () => {
   describe('transient', () => {
     it('can handle optional params', () => {
       type TransientParams = { globalTransientId?: number };
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory.transient<TransientParams>({}).attributes<{ id: number }>({
           id: ({ transientParams }) => transientParams.globalTransientId ?? 1,
         })
@@ -489,7 +489,7 @@ describe('DSL', () => {
 
   describe('attributes', () => {
     it('can use sequence in attribute builder', () => {
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory.attributes<{ id: number }>({
           id: ({ sequence }) => sequence + 1,
         })
@@ -504,7 +504,7 @@ describe('DSL', () => {
     });
 
     it('can use global transient params in attribute builder', () => {
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory
           .transient({
             globalTransientId: 10,
@@ -524,7 +524,7 @@ describe('DSL', () => {
     });
 
     it('can use params in attribute builder', () => {
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory.attributes<{ id: number; name: string }>({
           id: 1,
           name({ params }) {
@@ -543,7 +543,7 @@ describe('DSL', () => {
 
   describe('traits', () => {
     it('defines trait with shorthand syntax', () => {
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory
           .attributes<{ id: number; name: string }>({
             id: 1,
@@ -557,7 +557,7 @@ describe('DSL', () => {
     });
 
     it('can use sequence in attribute builder', () => {
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory
           .attributes<{ id: number }>({
             id: 1,
@@ -576,7 +576,7 @@ describe('DSL', () => {
     });
 
     it('can use transient params in attribute builder', () => {
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory
           .transient({ globalTransientId: 10 })
           .attributes<{ id: number; name: string }>({
@@ -609,7 +609,7 @@ describe('DSL', () => {
     });
 
     it('can use params in attribute builder', () => {
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory
           .attributes<{ id: number; name: string }>({ id: 1, name: 'name' })
           .trait('evenOdd', (trait) =>
@@ -629,7 +629,7 @@ describe('DSL', () => {
     });
 
     it('can use transientParams in afterCreate', () => {
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory
           .transient({ globalTransientId: 10 })
           .attributes<{ id: number; name: string }>({ id: 1, name: 'name' })
@@ -660,7 +660,7 @@ describe('DSL', () => {
 
   describe('afterCreate', () => {
     it('can use transientParams', () => {
-      const factory = Factory.define((factory) =>
+      const factory = createFactory((factory) =>
         factory
           .transient({ globalTransientId: 10 })
           .attributes<{ id: number }>({ id: 1 })
