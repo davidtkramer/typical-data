@@ -338,10 +338,10 @@ users.posts.length // 5
 
 ### After Create Hooks
 
-After create hooks allow you to run custom logic after an entity has been created. The created entity is passed to the callback as well as transientParams.
+After create hooks allow you to run custom logic after an entity has been created. The created entity is passed to the callback as well as any transientParams.
 
 ```typescript
-const contactFactory = Factory.define(factory =>
+const contactFactory = Factory.define((factory) =>
   factory
     .transient({ upcaseName: false })
     .attributes<Contact>({
@@ -358,15 +358,85 @@ const contactFactory = Factory.define(factory =>
 );
 
 // no overrides provided, will use default transient param values
-contactFactory.build()
-contact.name  // 'Alice'
+contactFactory.build();
+contact.name; // 'Alice'
 
 // will use provided transient params
-contactFactory.build({ upcaseName: true })
-contact.name  // 'ALICE'
+contactFactory.build({ upcaseName: true });
+contact.name; // 'ALICE'
 ```
 
 ### Extending Factories
+
+Factories can extend from one or more parent factories. This is helpful for sharing logic between factories and modeling inheritance. Transient params, attributes, traits, and after create hooks defined on the parent will be inherited.
+
+Sharing logic
+
+```typescript
+const phoneFactory = Factory.define((factory) =>
+  factory.transient({ areaCode: 555 }).attributes<{ phone: string }>({
+    phone: ({ transientParams }) => `(${transientParams.areaCode}) 123-4567`,
+  })
+);
+
+const timestampFactory = Factory.define((factory) =>
+  factory
+    .transient({ timeZone: 'UTC' })
+    .attributes<{ createdAt: string; updatedAt: string }>({
+      createdAt({ transientParams }) {
+        return dateInTimezone(transientParams.timeZone);
+      },
+      updatedAt({ transientParams }) {
+        return dateInTimezone(transientParams.timeZone);
+      },
+    })
+);
+
+const contactFactory = Factory.define((factory) =>
+  factory.extends(phoneFactory, timestampFactory).attributes<{
+    id: number;
+    name: string;
+    phone: string;
+    createdAt: string;
+    updatedAt: string;
+  }>({
+    id: 1,
+    name: 'Alice',
+  })
+);
+
+const contact = contactFactory.build({
+  areaCode: 530,
+  timeZone: 'America/Los_Angeles',
+});
+```
+
+Inheritance
+
+```typescript
+interface BaseContact {
+  id: 1;
+  email: string;
+}
+interface BusinessContact extends BaseContact {
+  businessName: string;
+}
+
+const baseContactFactory = Factory.define((factory) =>
+  factory.attributes<BaseContact>({
+    id: 1,
+    email: 'email@example.com',
+  })
+);
+
+const businessContactFactory = Factory.define((factory) =>
+  factory.attributes<BusinessContact>({
+    businessName: 'Mega Lo Mart',
+  })
+);
+```
+
+> By providing a type to both the parent and child `attributes` methods, Typical Data will infer which attributes the child shares with the parent and will not require redefining them in the child factory.
 
 ## Database
 
@@ -382,3 +452,7 @@ contact.name  // 'ALICE'
 
 - The factory DSL is modeled after the [Factory Bot](https://github.com/thoughtbot/factory_bot) gem.
 - The idea for an in-memory database composed of factories came from [Mirage JS](https://miragejs.com/)
+
+```
+
+```
