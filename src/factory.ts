@@ -214,7 +214,7 @@ interface FactoryDefinition {
     {
       attributeDefaults: Record<string, any>;
       transientParamDefaults: Record<string, any>;
-      afterCreate?(...args: Array<any>): void;
+      afterCreateHooks: Array<(...args: Array<any>) => void>;
     }
   >;
   afterCreateHooks: Array<(...args: Array<any>) => void>;
@@ -300,12 +300,14 @@ export const Factory = {
         // after create hooks
         for (let traitName of traitNames.reverse()) {
           const trait = definition.traits[traitName];
-          trait.afterCreate?.(entity, {
-            transientParams: {
-              ...trait.transientParamDefaults,
-              ...transientParams,
-            },
-          });
+          for (let afterCreate of trait.afterCreateHooks) {
+            afterCreate(entity, {
+              transientParams: {
+                ...trait.transientParamDefaults,
+                ...transientParams,
+              },
+            });
+          }
         }
 
         for (let afterCreate of definition.afterCreateHooks) {
@@ -370,7 +372,7 @@ export const Factory = {
         definition.traits[name] = {
           attributeDefaults: {},
           transientParamDefaults: {},
-          afterCreate: undefined,
+          afterCreateHooks: [],
         };
         if (typeof traitBuilderArg === 'function') {
           const traitBuilder: TraitBuilder<any, any, any> = {
@@ -383,7 +385,9 @@ export const Factory = {
               return traitBuilder;
             },
             afterCreate(afterCreateCallback) {
-              definition.traits[name].afterCreate = afterCreateCallback;
+              definition.traits[name].afterCreateHooks.push(
+                afterCreateCallback
+              );
               return traitBuilder;
             },
           };

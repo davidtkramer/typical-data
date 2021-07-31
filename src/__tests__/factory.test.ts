@@ -11,13 +11,13 @@ describe('build', () => {
         type: 'standard' | 'bot';
         role: 'member' | 'admin' | 'owner';
         name: string;
-        lastHook: string;
+        hooks: Array<string>;
       }>({
         id: 1,
         type: 'standard',
         role: 'member',
         name: 'Alice',
-        lastHook: '',
+        hooks: () => [],
       })
       .trait('bob', { name: 'Bob' })
       .trait('admin', (trait) =>
@@ -33,7 +33,7 @@ describe('build', () => {
           })
           .afterCreate((entity, { transientParams }) => {
             if (transientParams.skipOwnerHook) return;
-            entity.lastHook = 'owner';
+            entity.hooks.push('owner');
           })
       )
       .trait('bot', (trait) =>
@@ -44,12 +44,20 @@ describe('build', () => {
           })
           .afterCreate((entity, { transientParams }) => {
             if (transientParams.skipBotHook) return;
-            entity.lastHook = 'bot';
+            entity.hooks.push('bot1');
+          })
+          .afterCreate((entity, { transientParams }) => {
+            if (transientParams.skipBotHook) return;
+            entity.hooks.push('bot2');
           })
       )
       .afterCreate((entity, { transientParams }) => {
         if (transientParams.skipGlobalHook) return;
-        entity.lastHook = 'global';
+        entity.hooks.push('global1');
+      })
+      .afterCreate((entity, { transientParams }) => {
+        if (transientParams.skipGlobalHook) return;
+        entity.hooks.push('global2');
       })
   );
 
@@ -64,7 +72,7 @@ describe('build', () => {
       type: 'standard',
       role: 'member',
       name: 'Alice',
-      lastHook: 'global',
+      hooks: ['global1', 'global2'],
     });
   });
 
@@ -80,7 +88,7 @@ describe('build', () => {
       type: 'bot',
       role: 'admin',
       name: 'bot',
-      lastHook: 'global',
+      hooks: ['global1', 'global2'],
     });
   });
 
@@ -103,7 +111,7 @@ describe('build', () => {
     });
     expect(user.id).toBe(10);
     expect(user.role).toBe('owner');
-    expect(user.lastHook).toBe('');
+    expect(user.hooks).toEqual([]);
   });
 
   it('gives precedence to attribute overrides over trait attributes', () => {
@@ -135,7 +143,7 @@ describe('build', () => {
     expect(user.role).toBe('admin');
     expect(user.type).toBe('bot');
     expect(user.name).toBe('Bob');
-    expect(user.lastHook).toBe('');
+    expect(user.hooks).toEqual([]);
   });
 
   it('gives precedence to rightmost traits', () => {
@@ -143,22 +151,17 @@ describe('build', () => {
     expect(ownerUser.role).toBe('owner');
   });
 
-  it('runs global afterCreate hooks', () => {
-    const user = factory.build();
-    expect(user.lastHook).toBe('global');
-  });
-
   it('runs global afterCreate hooks after trait afterCreate hooks', () => {
     const user = factory.build('owner', 'bot');
-    expect(user.lastHook).toBe('global');
+    expect(user.hooks).toEqual(['owner', 'bot1', 'bot2', 'global1', 'global2']);
   });
 
   it('runs trait afterCreate hooks in same order as provided traits', () => {
     const user1 = factory.build('owner', 'bot', { skipGlobalHook: true });
-    expect(user1.lastHook).toBe('bot');
+    expect(user1.hooks).toEqual(['owner', 'bot1', 'bot2']);
 
     const user2 = factory.build('bot', 'owner', { skipGlobalHook: true });
-    expect(user2.lastHook).toBe('owner');
+    expect(user2.hooks).toEqual(['bot1', 'bot2', 'owner']);
   });
 
   it('rejects trait transient params when no traits are provided', () => {
