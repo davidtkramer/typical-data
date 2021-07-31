@@ -149,7 +149,7 @@ it('creates a contact', async () => {
 
 Factories provide a flexible DSL to customize how your objects are created. Factories are designed to integrate with a [database](#database), but can also be used standalone.
 
-Factories are created using the `createFactory` function. It supports two different forms to define factories: an "attributes" notation and a "builder callback" notation. The "attributes" notation lets you quickly define simple attribute-only factories. The "builder callback" notation lets you define more complex factories with attributes and [transient params](#transient-params), [traits](#traits), or [afterBuild](#after-build-hooks) hooks.
+Factories are created using the `createFactory` function. It supports two different forms to define factories: an "attributes" notation and a "builder callback" notation. The "attributes" notation lets you quickly define simple attribute-only factories. The "builder callback" notation lets you define more complex factories with attributes, [transient params](#transient-params), [traits](#traits), and [afterBuild](#after-build-hooks) hooks.
 
 #### Attributes Notation
 
@@ -163,6 +163,8 @@ const contactFactory = createFactory<Contact>({
 ```
 
 #### Builder Callback Notation
+
+> With the builder callback notation, make sure to return the factory from the builder callback. This allows the compiler to infer the types of transient params, trait names, and any trait transient params.
 
 ```typescript
 const contactFactory = createFactory((factory) =>
@@ -186,8 +188,6 @@ const contactFactory = createFactory((factory) =>
     })
 );
 ```
-
-> With the builder callback notation, make sure to return the factory from the builder callback. This allows the compiler to infer the types of transient params, trait names, and any trait transient params.
 
 ### Attributes
 
