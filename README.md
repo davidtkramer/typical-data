@@ -370,7 +370,7 @@ contact.name; // 'ALICE'
 
 Factories can extend from one or more parent factories. This is helpful for sharing logic between factories and modeling inheritance. Transient params, attributes, traits, and after create hooks defined on the parent will be inherited.
 
-Sharing logic
+#### Sharing logic
 
 ```typescript
 const phoneFactory = Factory.define((factory) =>
@@ -415,7 +415,7 @@ const contact = contactFactory.build({
 });
 ```
 
-Inheritance
+#### Inheritance
 
 ```typescript
 interface BaseContact {
@@ -459,7 +459,7 @@ The state of the database can be reset back to its original state with the `rese
 import { db } from './your-db';
 
 beforeEach(() => {
-  db.reset()
+  db.reset();
 });
 ```
 
