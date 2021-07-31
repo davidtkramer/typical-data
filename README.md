@@ -93,7 +93,7 @@ setupServer(
 )
 ```
 ```typescript
-it('fetches and displays an individual contact info', async () => {
+it('fetches and displays contact info', async () => {
   const contact = db.contacts.create({
     name: 'Alice',
     email: 'test@example.com',
@@ -108,3 +108,24 @@ it('fetches and displays an individual contact info', async () => {
 });
 ```
 
+## Factories
+
+### Attributes
+
+### Transient Params
+
+### Traits
+
+### After Create Hooks
+
+### Extending Factories
+
+## Database
+
+### Creating a database
+
+### Fixtures
+
+### Handling Extended Factories
+
+### Resetting 
