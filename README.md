@@ -251,7 +251,7 @@ const contactFactory = createFactory(factory =>
       }
       name: 'Alice',
     })
-    .afterCreate((entity, { transientParams }) => {
+    .afterCreate(({ entity, transientParams }) => {
       if (transientParams.downcaseName) {
         entity.name = entity.name.toLowerCase();
       }
@@ -323,7 +323,7 @@ const userFactory = createFactory((factory) =>
         .attributes({
           type: 'author'
         })
-        .afterCreate((entity, { transientParams }) => {
+        .afterCreate(({ entity, transientParams }) => {
           const { postCount } = transientParams;
           for (let i = 0; i < postCount; i++) {
             entity.posts.push(...postFactory.buildList(postCount))
@@ -350,7 +350,7 @@ const contactFactory = createFactory((factory) =>
       phone: '(555) 123,4567',
       name: 'Alice',
     })
-    .afterCreate((entity, { transientParams }) => {
+    .afterCreate(({ entity, transientParams }) => {
       if (transientParams.upcaseName) {
         entity.name = entity.name.toUpperCase();
       }
