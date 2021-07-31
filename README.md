@@ -26,7 +26,7 @@ Typical Data is a library for building mock data with factories and querying it 
   - [After Create Hooks](#after-create-hooks)
   - [Extending Factories](#extending-factories)
 - [Database](#database)
-  - [Creating a Database](#creating-a-database)
+  - [Database Setup](#database-setup)
   - [Fixtures](#fixtures)
   - [Inheritance](#inheritance)
   - [Querying]
@@ -445,13 +445,13 @@ const businessContactFactory = Factory.define((factory) =>
 
 ## Database
 
-### Creating a database
+### Database Setup
 
 Databases are created by passing factories to the `factories` config option.
 
 ```typescript
 import { Database } from 'typical-data';
-import { userFactory } from './factories'
+import { userFactory, contactFactory } from './factories'
 
 const db = Database.create({
   factories: {
@@ -462,7 +462,7 @@ const db = Database.create({
 
 ```
 
-Now you can create and query objects through the database using the same keys specified in the `factories` option. The `create` and `createList` methods have the same signature as the factory `build` and `buildList` methods.
+Now you can create and query objects through the database. The `create` and `createList` methods have the same signature as the factory `build` and `buildList` methods.
 
 ```typescript
 db.users.create({ name: 'Bob' });
