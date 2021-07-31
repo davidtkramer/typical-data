@@ -192,21 +192,24 @@ const contactFactory = createFactory((factory) =>
 
 ### Attributes
 
-A factory defines default attributes for an object. Providing an explicit type to `createFactory` will enable type-checking in the factory definition and when building objects.
+A factory defines default attributes for an object. Attributes can be set to a static value or they can defined dynamically using a function.
 
 ```typescript
 import { createFactory } from 'typical-data';
+import faker from 'faker';
 import { Contact } from './your-types';
 
 const contactFactory = createFactory<Contact>({
   id: 1,
   type: 'individual',
   phone: '(555) 123-4567',
-  name: 'Alice',
+  name: () => faker.name.findName(),
 });
 
 const contact = contactFactory.build();
 ```
+
+> Providing an explicit type argument to `createFactory` will enable type-checking in the factory definition and when building objects.
 
 The build method accepts attributes that will override the defaults defined on the factory
 
