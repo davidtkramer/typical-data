@@ -22,11 +22,13 @@ Typical Data helps bridge the gap between your tests and your mock API. This lib
 ## Installation
 
 Install with npm:
+
 ```
 npm install --save-dev typical-data
 ```
 
 Install with yarn:
+
 ```
 yarn add --dev typical-data
 ```
@@ -39,14 +41,13 @@ Define a factory for creating an object.
 import { Factory } from 'typical-data';
 import { Contact } from './your-types';
 
-const contactFactory = Factory.define(factory =>
-  factory
-    .attributes<Contact>({
-      id: ({ sequence }) => sequence,
-      email: 'email@example.com',
-      phone: '(555) 123-4567',
-      name: 'name',
-    })
+const contactFactory = Factory.define((factory) =>
+  factory.attributes<Contact>({
+    id: ({ sequence }) => sequence,
+    email: 'email@example.com',
+    phone: '(555) 123-4567',
+    name: 'name',
+  })
 );
 ```
 
@@ -60,8 +61,8 @@ const db = Database.create({
   factories: {
     contacts: contactFactory,
     users: userFactory,
-  }
-})
+  },
+});
 ```
 
 Now you can create and query data in your mock API and in your tests. Example with Mock Service Worker and React Testing Library:
@@ -92,6 +93,7 @@ setupServer(
   }),
 )
 ```
+
 ```typescript
 it('creates a contact', async () => {
   await render(<CreateContactScreen />);
@@ -99,19 +101,19 @@ it('creates a contact', async () => {
   user.type(screen.getByLabelText('name'), 'Bob');
   user.type(screen.getByLabelText('email'), 'bob@example.com');
   user.type(screen.getByLabelText('phone'), '(555) 123-4567');
-  user.click(screen.getByRole('button', { name: /created/ }))
+  user.click(screen.getByRole('button', { name: /created/ }));
 
-  await screen.findByText(/contact created!/)
+  await screen.findByText(/contact created!/);
   expect(db.contacts).toHaveLength(1);
-  expect(db.contacts[0].name).toBe('Bob')
-})
+  expect(db.contacts[0].name).toBe('Bob');
+});
 
 it('fetches and displays contact info', async () => {
   // create a contact and persist it in the database
   const contact = db.contacts.create({
     name: 'Alice',
     email: 'test@example.com',
-    phone: '(555) 248-1632'
+    phone: '(555) 248-1632',
   });
 
   // ContactDetails will fetch the contact with the provided id from the api
@@ -135,14 +137,13 @@ This simplest factory defines default attributes for an object. Providing an exp
 import { Factory } from 'typical-data';
 import { Contact } from './your-types';
 
-const contactFactory = Factory.define(factory =>
-  factory
-    .attributes<Contact>({
-      id: 1,
-      type: 'individual',
-      phone: '(555) 123-4567',
-      name: 'Alice',
-    })
+const contactFactory = Factory.define((factory) =>
+  factory.attributes<Contact>({
+    id: 1,
+    type: 'individual',
+    phone: '(555) 123-4567',
+    name: 'Alice',
+  })
 );
 
 const contact = contactFactory.build();
@@ -151,7 +152,10 @@ const contact = contactFactory.build();
 The build method accepts attributes that will override the defaults defined on the factory
 
 ```typescript
-const businessContact = contactFactory.build({ type: 'business', name: 'Mega Lo Mart' });
+const businessContact = contactFactory.build({
+  type: 'business',
+  name: 'Mega Lo Mart',
+});
 ```
 
 > Note: Typing for the build method requires TypeScript >= 4.0.0 due to the use of variadic tuple types
@@ -161,27 +165,26 @@ const businessContact = contactFactory.build({ type: 'business', name: 'Mega Lo 
 A sequence is an integer that increments on each invocation of the factory `build` method. This is helpful for generating unique IDs or varying the data returned by the factory.
 
 ```typescript
-const contactFactory = Factory.define(factory =>
-  factory
-    .attributes<Contact>({
-      id({ sequence }) {
-        return sequence;
-      },
-      type({ sequence }) {
-        const types = ['individual', 'business'];
-        return types[sequence % 2];
-      },
-      phone: '(555) 123-4567',
-      name: 'Alice',
-    })
+const contactFactory = Factory.define((factory) =>
+  factory.attributes<Contact>({
+    id({ sequence }) {
+      return sequence;
+    },
+    type({ sequence }) {
+      const types = ['individual', 'business'];
+      return types[sequence % 2];
+    },
+    phone: '(555) 123-4567',
+    name: 'Alice',
+  })
 );
 
 const contact1 = contactFactory.build();
-contact1.id   // 0
-contact1.type // individual
+contact1.id; // 0
+contact1.type; // individual
 const contact2 = contactFactory.build();
-contact2.id   // 1
-contact2.type // business
+contact2.id; // 1
+contact2.type; // business
 ```
 
 Sequences can be reset back to 0 with the `rewindSequence` method.
@@ -195,16 +198,15 @@ contactFactory.rewindSequence();
 Attributes can be derived from other attributes with the `params` option.
 
 ```typescript
-const userFactory = Factory.define(factory =>
-  factory
-    .attributes<User>({
-      id: 1,
-      firstName: 'Alice',
-      lastName: 'Smith',
-      fullName({ params }) {
-        return `${params.firstName} ${params.lastName}`;
-      }
-    })
+const userFactory = Factory.define((factory) =>
+  factory.attributes<User>({
+    id: 1,
+    firstName: 'Alice',
+    lastName: 'Smith',
+    fullName({ params }) {
+      return `${params.firstName} ${params.lastName}`;
+    },
+  })
 );
 
 userFactory.build().fullName; // 'Alice Smith'
@@ -214,7 +216,7 @@ userFactory.build().fullName; // 'Alice Smith'
 
 Transient params are arguments that can be passed to the build method that are not merged into the returned object. They can be used to provide options to attribute builders and afterCreate hooks.
 
-The `transient` method defines the default values for transient params. The types for transient params are inferred by the compiler and will be strongly-typed in the build method, just like regular attributes.
+The `transient` method defines the default values for transient params. The types for transient params are inferred by the compiler and will be type-safe in the build method, just like regular attributes.
 
 ```typescript
 const contactFactory = Factory.define(factory =>
@@ -248,6 +250,38 @@ contact.name  // 'alice'
 
 ### Traits
 
+Traits allow you to group attributes together and apply them by passing the trait name to the `build` method.
+
+```typescript
+const contactFactory = Factory.define((factory) =>
+  factory
+    .attributes<User>({
+      id: 1,
+      type: 'member',
+      isAdmin: false,
+      isActive: true,
+      firstName: 'Alice',
+      lastName: 'Smith',
+    })
+    .trait('admin', {
+      type: 'admin',
+      isAdmin: true,
+    })
+    .trait('inactive', {
+      isActive: false
+    })
+);
+
+const adminContact = contactFactory.build('admin');
+contact.type    // 'admin'
+contact.isAdmin // true
+
+const inactiveAdminContact = contactFactory.build('inactive', 'admin');
+contact.type     // 'admin'
+contact.isAdmin  // true
+contact.isActive // false
+```
+
 ### After Create Hooks
 
 ### Extending Factories
@@ -261,3 +295,8 @@ contact.name  // 'alice'
 ### Handling Extended Factories
 
 ### Resetting
+
+## Credits/Insipiration
+
+- The factory DSL is modeled after the [Factory Bot](https://github.com/thoughtbot/factory_bot) gem.
+- The idea for an in-memory database composed of factories came from [Mirage JS](https://miragejs.com/)
