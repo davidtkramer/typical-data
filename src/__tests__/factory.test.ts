@@ -31,7 +31,7 @@ describe('build', () => {
           .attributes({
             role: 'owner',
           })
-          .afterCreate((entity, { transientParams }) => {
+          .afterCreate(({ entity, transientParams }) => {
             if (transientParams.skipOwnerHook) return;
             entity.hooks.push('owner');
           })
@@ -42,20 +42,20 @@ describe('build', () => {
           .attributes({
             type: 'bot',
           })
-          .afterCreate((entity, { transientParams }) => {
+          .afterCreate(({ entity, transientParams }) => {
             if (transientParams.skipBotHook) return;
             entity.hooks.push('bot1');
           })
-          .afterCreate((entity, { transientParams }) => {
+          .afterCreate(({ entity, transientParams }) => {
             if (transientParams.skipBotHook) return;
             entity.hooks.push('bot2');
           })
       )
-      .afterCreate((entity, { transientParams }) => {
+      .afterCreate(({ entity, transientParams }) => {
         if (transientParams.skipGlobalHook) return;
         entity.hooks.push('global1');
       })
-      .afterCreate((entity, { transientParams }) => {
+      .afterCreate(({ entity, transientParams }) => {
         if (transientParams.skipGlobalHook) return;
         entity.hooks.push('global2');
       })
@@ -268,11 +268,11 @@ describe('DSL', () => {
           })
           .trait('invalidPhone', { phone: 'asdf' })
           .trait('withCountryCode', (trait) =>
-            trait.transient({ countryCode: 1 }).afterCreate((entity) => {
+            trait.transient({ countryCode: 1 }).afterCreate(({ entity }) => {
               entity.phone = `+1 ${entity.phone}`;
             })
           )
-          .afterCreate((entity) => {
+          .afterCreate(({ entity }) => {
             entity.phone = entity.phone + ' x123';
           })
       );
@@ -288,7 +288,7 @@ describe('DSL', () => {
             businessName: 'Mega Lo Mart',
           })
           .trait('invalidName', { businessName: '' })
-          .afterCreate((entity, { transientParams }) => {
+          .afterCreate(({ entity, transientParams }) => {
             if (transientParams.upcaseName) {
               entity.businessName = entity.businessName.toUpperCase();
             }
@@ -397,11 +397,11 @@ describe('DSL', () => {
           .trait('parentTrait', (trait) =>
             trait
               .transient({ parentTraitTransientParam: 1 })
-              .afterCreate((entity) => {
+              .afterCreate(({ entity }) => {
                 entity.hooks.push('parentTraitHook');
               })
           )
-          .afterCreate((entity) => {
+          .afterCreate(({ entity }) => {
             entity.hooks.push('parentHook');
           })
       );
@@ -411,11 +411,13 @@ describe('DSL', () => {
           .extends(parentFactory)
           .attributes<ChildOne>({ childOneAttribute: 1 })
           .trait('parentTrait', (trait) =>
-            trait.attributes({ childOneAttribute: 2 }).afterCreate((entity) => {
-              entity.hooks.push('childOneTraitHook');
-            })
+            trait
+              .attributes({ childOneAttribute: 2 })
+              .afterCreate(({ entity }) => {
+                entity.hooks.push('childOneTraitHook');
+              })
           )
-          .afterCreate((entity) => {
+          .afterCreate(({ entity }) => {
             entity.hooks.push('childOneHook');
           })
       );
@@ -425,11 +427,13 @@ describe('DSL', () => {
           .extends(parentFactory)
           .attributes<ChildTwo>({ childTwoAttribute: 1 })
           .trait('parentTrait', (trait) =>
-            trait.attributes({ childTwoAttribute: 1 }).afterCreate((entity) => {
-              entity.hooks.push('childTwoTraitHook');
-            })
+            trait
+              .attributes({ childTwoAttribute: 1 })
+              .afterCreate(({ entity }) => {
+                entity.hooks.push('childTwoTraitHook');
+              })
           )
-          .afterCreate((entity) => {
+          .afterCreate(({ entity }) => {
             entity.hooks.push('childTwoHook');
           })
       );
@@ -636,7 +640,7 @@ describe('DSL', () => {
           .trait('transient', (trait) =>
             trait
               .transient({ traitTransientName: 'transientNameDefault' })
-              .afterCreate((entity, { transientParams }) => {
+              .afterCreate(({ entity, transientParams }) => {
                 entity.id = transientParams.globalTransientId;
                 entity.name = transientParams.traitTransientName;
               })
@@ -664,7 +668,7 @@ describe('DSL', () => {
         factory
           .transient({ globalTransientId: 10 })
           .attributes<{ id: number }>({ id: 1 })
-          .afterCreate((entity, { transientParams }) => {
+          .afterCreate(({ entity, transientParams }) => {
             entity.id = transientParams.globalTransientId;
           })
       );
