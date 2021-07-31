@@ -9,7 +9,7 @@
   <h1>Typical Data</h1>
 </div>
 
-Typical Data is a library for building and querying mock data with factories and a lightweight in-memory database. Although it's designed with [Mock Service Worker](https://github.com/mswjs/msw), [React Testing Library](https://github.com/testing-library/react-testing-library), and TypeScript in mind, Typical Data can be used with any API mocking or testing framework.
+Typical Data is a library for building mock data with factories and querying it with a lightweight in-memory database. Although it's designed with [Mock Service Worker](https://github.com/mswjs/msw), [React Testing Library](https://github.com/testing-library/react-testing-library), and TypeScript in mind, Typical Data can be used with any API mocking or testing framework.
 
 ## Table of Contents
 
@@ -317,7 +317,7 @@ const userFactory = Factory.define((factory) =>
       type: 'admin',
       posts: () => []
     })
-    .trait('withPosts', trait =>
+    .trait('withPosts', (trait) =>
       trait
         .transient({ postCount: 0 })
         .attributes({
@@ -337,6 +337,8 @@ users.posts.length // 5
 ```
 
 ### After Create Hooks
+
+After create hooks allow you to run custom logic after an entity has been created.
 
 ### Extending Factories
 
