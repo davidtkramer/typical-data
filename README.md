@@ -220,7 +220,7 @@ const businessContact = contactFactory.build({
 });
 ```
 
-> Providing an explicit type argument to `createFactory` will enable type-checking in the factory definition and when building objects. Types for the build method require TypeScript >= 4.0.0 due to the use of variadic tuple types.
+> Providing an explicit type argument to `createFactory` will enable type-checking in both the factory definition and the build method. Types for the build method require TypeScript >= 4.0.0 due to the use of variadic tuple types.
 
 ### Sequences
 
