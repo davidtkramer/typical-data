@@ -338,7 +338,7 @@ users.posts.length // 5
 
 ### After Create Hooks
 
-After create hooks allow you to run custom logic after an entity has been created. The created entity is passed to the callback as well as any transientParams.
+After create hooks allow you to run custom logic after an entity has been created. The created entity is passed to the callback as well as any transient params.
 
 ```typescript
 const contactFactory = Factory.define((factory) =>
@@ -436,7 +436,7 @@ const businessContactFactory = Factory.define((factory) =>
 );
 ```
 
-> By providing a type to both the parent and child `attributes` methods, Typical Data will infer which attributes the child shares with the parent and will not require redefining them in the child factory.
+> By providing a type to both the parent and child factories' `attributes` methods, Typical Data will infer which attributes the child shares with the parent and will not require redefining them in the child factory.
 
 ## Database
 
