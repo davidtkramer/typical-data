@@ -196,7 +196,7 @@ const contactFactory = createFactory((factory) =>
 
 ### Attributes
 
-A factory defines default attributes for an object. Attributes can be set to a static value or they can defined dynamically using a function.
+A factory defines default attributes for an object. Attributes can be set to a static value or they can be defined dynamically using a function.
 
 ```typescript
 import { createFactory } from 'typical-data';
@@ -226,7 +226,7 @@ const businessContact = contactFactory.build({
 
 ### Sequences
 
-A sequence is an integer that increments on each invocation of the factory `build` method. This is helpful for generating unique IDs or varying the data returned by the factory.
+A sequence is an integer that increments on each invocation of the factory `build`  or `buildList` method. This is helpful for generating unique IDs or varying the data returned by the factory.
 
 ```typescript
 const contactFactory = createFactory<Contact>({
