@@ -450,15 +450,14 @@ Databases are created by passing factories to the `factories` config option.
 
 ```typescript
 import { Database } from 'typical-data';
-import { userFactory, contactFactory } from './factories'
+import { userFactory, contactFactory } from './factories';
 
 const db = Database.create({
   factories: {
     users: userFactory,
-    contacts: contactFactory
-  }
-})
-
+    contacts: contactFactory,
+  },
+});
 ```
 
 Now you can create and query objects through the database. The `create` and `createList` methods have the same signature as the factory `build` and `buildList` methods.
@@ -466,7 +465,7 @@ Now you can create and query objects through the database. The `create` and `cre
 ```typescript
 db.users.create({ name: 'Bob' });
 db.users.createList(10, { tenantId: 20 });
-const contact = db.users.find(contact => contact.name === 'Bob');
+const contact = db.users.find((contact) => contact.name === 'Bob');
 ```
 
 #### Inheritance
@@ -477,13 +476,13 @@ Factories can be [extended](#extending-factories) to model inheritance relations
 const db = Database.create({
   contacts: {
     individual: individualContactFactory,
-    business: businessContactFactory
-  }
+    business: businessContactFactory,
+  },
 });
 
-db.contacts.individual.create()
-db.contacts.business.create()
-db.contacts.length // 2
+db.contacts.individual.create();
+db.contacts.business.create();
+db.contacts.length; // 2
 ```
 
 ### Fixtures
@@ -531,8 +530,8 @@ const db = Database.create({
 Support for database-like querying is on the roadmap. For now, the object stores are just extended JavaScript arrays, so you can use normal array methods to find and manipulate data.
 
 ```typescript
-db.users.find(user => user.id === id);
-db.users.filter(user => user.type === 'admin');
+db.users.find((user) => user.id === id);
+db.users.filter((user) => user.type === 'admin');
 ```
 
 ### Reset
