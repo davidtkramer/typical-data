@@ -235,7 +235,7 @@ userFactory.build().fullName; // 'Alice Smith'
 
 ### Transient Params
 
-Transient params are arguments that can be passed to the build method that are not merged into the returned object. They can be used to provide options to attribute builders and afterCreate hooks.
+Transient params are arguments that can be passed to the build method that are not merged into the returned object. They can be used to provide options to attribute builders and afterBuild hooks.
 
 The `transient` method defines the default values for transient params. The types for transient params are inferred by the compiler and will be type-safe in the build method, just like regular attributes.
 
@@ -251,7 +251,7 @@ const contactFactory = createFactory(factory =>
       }
       name: 'Alice',
     })
-    .afterCreate(({ entity, transientParams }) => {
+    .afterBuild(({ entity, transientParams }) => {
       if (transientParams.downcaseName) {
         entity.name = entity.name.toLowerCase();
       }
@@ -303,7 +303,7 @@ user.isAdmin; // true
 user.isActive; // false
 ```
 
-Traits can define their own transient params and after create hooks using the alternative builder syntax.
+Traits can define their own transient params and after build hooks using the alternative builder syntax.
 
 ```typescript
 import { postFactory } from './post-factory';
@@ -323,7 +323,7 @@ const userFactory = createFactory((factory) =>
         .attributes({
           type: 'author'
         })
-        .afterCreate(({ entity, transientParams }) => {
+        .afterBuild(({ entity, transientParams }) => {
           const { postCount } = transientParams;
           for (let i = 0; i < postCount; i++) {
             entity.posts.push(...postFactory.buildList(postCount))
@@ -350,7 +350,7 @@ const contactFactory = createFactory((factory) =>
       phone: '(555) 123,4567',
       name: 'Alice',
     })
-    .afterCreate(({ entity, transientParams }) => {
+    .afterBuild(({ entity, transientParams }) => {
       if (transientParams.upcaseName) {
         entity.name = entity.name.toUpperCase();
       }
@@ -368,7 +368,7 @@ contact.name; // 'ALICE'
 
 ### Extending Factories
 
-Factories can extend from one or more parent factories. This is helpful for sharing logic between factories and modeling inheritance. Transient params, attributes, traits, and after create hooks defined on the parent will be inherited.
+Factories can extend from one or more parent factories. This is helpful for sharing logic between factories and modeling inheritance. Transient params, attributes, traits, and after build hooks defined on the parent will be inherited.
 
 #### Sharing logic
 

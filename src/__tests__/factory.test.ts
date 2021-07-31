@@ -31,7 +31,7 @@ describe('build', () => {
           .attributes({
             role: 'owner',
           })
-          .afterCreate(({ entity, transientParams }) => {
+          .afterBuild(({ entity, transientParams }) => {
             if (transientParams.skipOwnerHook) return;
             entity.hooks.push('owner');
           })
@@ -42,20 +42,20 @@ describe('build', () => {
           .attributes({
             type: 'bot',
           })
-          .afterCreate(({ entity, transientParams }) => {
+          .afterBuild(({ entity, transientParams }) => {
             if (transientParams.skipBotHook) return;
             entity.hooks.push('bot1');
           })
-          .afterCreate(({ entity, transientParams }) => {
+          .afterBuild(({ entity, transientParams }) => {
             if (transientParams.skipBotHook) return;
             entity.hooks.push('bot2');
           })
       )
-      .afterCreate(({ entity, transientParams }) => {
+      .afterBuild(({ entity, transientParams }) => {
         if (transientParams.skipGlobalHook) return;
         entity.hooks.push('global1');
       })
-      .afterCreate(({ entity, transientParams }) => {
+      .afterBuild(({ entity, transientParams }) => {
         if (transientParams.skipGlobalHook) return;
         entity.hooks.push('global2');
       })
@@ -151,12 +151,12 @@ describe('build', () => {
     expect(ownerUser.role).toBe('owner');
   });
 
-  it('runs global afterCreate hooks after trait afterCreate hooks', () => {
+  it('runs global afterBuild hooks after trait afterBuild hooks', () => {
     const user = factory.build('owner', 'bot');
     expect(user.hooks).toEqual(['owner', 'bot1', 'bot2', 'global1', 'global2']);
   });
 
-  it('runs trait afterCreate hooks in same order as provided traits', () => {
+  it('runs trait afterBuild hooks in same order as provided traits', () => {
     const user1 = factory.build('owner', 'bot', { skipGlobalHook: true });
     expect(user1.hooks).toEqual(['owner', 'bot1', 'bot2']);
 
@@ -251,7 +251,7 @@ describe('buildList', () => {
 
 describe('DSL', () => {
   describe('extends', () => {
-    it('can inherit attributes, transientParams, traits, and afterCreate hooks', () => {
+    it('can inherit attributes, transientParams, traits, and afterBuild hooks', () => {
       interface BaseContact {
         id: number;
         phone: string;
@@ -268,11 +268,11 @@ describe('DSL', () => {
           })
           .trait('invalidPhone', { phone: 'asdf' })
           .trait('withCountryCode', (trait) =>
-            trait.transient({ countryCode: 1 }).afterCreate(({ entity }) => {
+            trait.transient({ countryCode: 1 }).afterBuild(({ entity }) => {
               entity.phone = `+1 ${entity.phone}`;
             })
           )
-          .afterCreate(({ entity }) => {
+          .afterBuild(({ entity }) => {
             entity.phone = entity.phone + ' x123';
           })
       );
@@ -288,14 +288,14 @@ describe('DSL', () => {
             businessName: 'Mega Lo Mart',
           })
           .trait('invalidName', { businessName: '' })
-          .afterCreate(({ entity, transientParams }) => {
+          .afterBuild(({ entity, transientParams }) => {
             if (transientParams.upcaseName) {
               entity.businessName = entity.businessName.toUpperCase();
             }
           })
       );
 
-      // inherits attributes, transientParam defaults, and afterCreate hooks
+      // inherits attributes, transientParam defaults, and afterBuild hooks
       const business1 = businessFactory.build();
       expect(business1.id).toBe(1);
       expect(business1.phone).toBe('(555) 123-4567 x123');
@@ -397,11 +397,11 @@ describe('DSL', () => {
           .trait('parentTrait', (trait) =>
             trait
               .transient({ parentTraitTransientParam: 1 })
-              .afterCreate(({ entity }) => {
+              .afterBuild(({ entity }) => {
                 entity.hooks.push('parentTraitHook');
               })
           )
-          .afterCreate(({ entity }) => {
+          .afterBuild(({ entity }) => {
             entity.hooks.push('parentHook');
           })
       );
@@ -413,11 +413,11 @@ describe('DSL', () => {
           .trait('parentTrait', (trait) =>
             trait
               .attributes({ childOneAttribute: 2 })
-              .afterCreate(({ entity }) => {
+              .afterBuild(({ entity }) => {
                 entity.hooks.push('childOneTraitHook');
               })
           )
-          .afterCreate(({ entity }) => {
+          .afterBuild(({ entity }) => {
             entity.hooks.push('childOneHook');
           })
       );
@@ -429,11 +429,11 @@ describe('DSL', () => {
           .trait('parentTrait', (trait) =>
             trait
               .attributes({ childTwoAttribute: 1 })
-              .afterCreate(({ entity }) => {
+              .afterBuild(({ entity }) => {
                 entity.hooks.push('childTwoTraitHook');
               })
           )
-          .afterCreate(({ entity }) => {
+          .afterBuild(({ entity }) => {
             entity.hooks.push('childTwoHook');
           })
       );
@@ -632,7 +632,7 @@ describe('DSL', () => {
       expect(user2.name).toBe('odd');
     });
 
-    it('can use transientParams in afterCreate', () => {
+    it('can use transientParams in afterBuild', () => {
       const factory = createFactory((factory) =>
         factory
           .transient({ globalTransientId: 10 })
@@ -640,7 +640,7 @@ describe('DSL', () => {
           .trait('transient', (trait) =>
             trait
               .transient({ traitTransientName: 'transientNameDefault' })
-              .afterCreate(({ entity, transientParams }) => {
+              .afterBuild(({ entity, transientParams }) => {
                 entity.id = transientParams.globalTransientId;
                 entity.name = transientParams.traitTransientName;
               })
@@ -662,13 +662,13 @@ describe('DSL', () => {
     });
   });
 
-  describe('afterCreate', () => {
+  describe('afterBuild', () => {
     it('can use transientParams', () => {
       const factory = createFactory((factory) =>
         factory
           .transient({ globalTransientId: 10 })
           .attributes<{ id: number }>({ id: 1 })
-          .afterCreate(({ entity, transientParams }) => {
+          .afterBuild(({ entity, transientParams }) => {
             entity.id = transientParams.globalTransientId;
           })
       );
