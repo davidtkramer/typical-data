@@ -28,8 +28,7 @@ Typical Data is a library for building mock data with factories and querying it 
 - [Database](#database)
   - [Database Setup](#database-setup)
   - [Fixtures](#fixtures)
-  - [Inheritance](#inheritance)
-  - [Querying]
+  - [Querying](#querying)
   - [Reset](#reset)
 - [Credits](#credits)
 
@@ -470,6 +469,23 @@ db.users.createList(10, { tenantId: 20 });
 const contact = db.users.find(contact => contact.name === 'Bob');
 ```
 
+#### Inheritance
+
+Factories can be [extended](#extending-factories) to model inheritance relationships. To store child objects in the same "table", for example to model single-table inheritance, you can nest child factories under a shared key. In the example below, both individual and business contacts will be persisted in `db.contacts`.
+
+```typescript
+const db = Database.create({
+  contacts: {
+    individual: individualContactFactory,
+    business: businessContactFactory
+  }
+});
+
+db.contacts.individual.create()
+db.contacts.business.create()
+db.contacts.length // 2
+```
+
 ### Fixtures
 
 You can seed your database with pre-defined objects using the `fixtures` option. This option accepts a callback function that will be passed the database instance.
@@ -508,23 +524,6 @@ const db = Database.create({
     self.contacts.createList(10);
   },
 });
-```
-
-### Inheritance
-
-Factories can be [extended](#extending-factories) to model inheritance relationships. To store child objects in the same "table", for example to model single-table inheritance, you can nest child factories under a shared key. In the example below, both individual and business contacts will be persisted in `db.contacts`.
-
-```typescript
-const db = Database.create({
-  contacts: {
-    individual: individualContactFactory,
-    business: businessContactFactory
-  }
-});
-
-db.contacts.individual.create()
-db.contacts.business.create()
-db.contacts.length // 2
 ```
 
 ### Querying
