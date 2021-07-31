@@ -286,7 +286,7 @@ const contactFactory = createFactory((factory) =>
       id: 1,
       email: 'email@example.com',
       phone({ transientParams }) {
-        return `(${transientParams.areaCode}) 123-4567`,
+        return `(${transientParams.areaCode}) 123-4567`;
       }
       name: 'Alice',
     })
