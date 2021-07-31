@@ -34,7 +34,7 @@ Typical Data is a library for building mock data with factories and querying it 
 
 ## The Problem
 
-[Mock Service Worker](https://github.com/mswjs/msw) makes it easy to create mock APIs and helps you avoid testing implementation details by eliminating repetitive request mocking in your tests. But removing API mocking from your tests can make it harder to customize the data returned by your API on a test-by-test basis. Hard-coded fixtures can be cumbersome and endpoint overriding is verbose and re-introduces api mocking into your tests.
+[Mock Service Worker](https://github.com/mswjs/msw) makes it easy to create mock APIs and helps you avoid testing implementation details by eliminating request mocking in your tests. But removing API mocking from your tests can make it harder to customize the data returned by your API on a test-by-test basis. Hard-coded fixtures can be cumbersome and endpoint overriding is verbose and re-introduces api mocking into your tests.
 
 ## The Solution
 
@@ -463,11 +463,11 @@ const db = Database.create({
     const currentTenant = self.tenants.create();
     const currentUser = self.users.create({ tenantId: currentTenant.id });
     return {
-      tenants: { currentTenant }
-      users: { currentUser }
-    }
-  }
-})
+      tenants: { currentTenant },
+      users: { currentUser },
+    };
+  },
+});
 
 const { currentTenant } = db.fixtures.tenants;
 const { currentUser } = db.fixtures.users;
@@ -482,11 +482,26 @@ const db = Database.create({
   },
   fixtures(self) {
     self.contacts.createList(10);
-  }
-})
+  },
+});
 ```
 
 ### Inheritance
+
+Factories can be [extended](#extending-factories) to model inheritance relationships. To store child objects in the same "table", for example to model single-table inheritance, you can nest child factories under a shared key. In the example below, both individual and business contacts will be persisted in `db.contacts`
+
+```typescript
+const db = Database.create({
+  contacts: {
+    individual: individualContactFactory,
+    business: businessContactFactory
+  }
+});
+
+db.contacts.individual.create()
+db.contacts.business.create()
+db.contacts.length // 2
+```
 
 ### Reset
 
@@ -504,4 +519,4 @@ beforeEach(() => {
 ## Credits
 
 - The factory DSL is modeled after the [Factory Bot](https://github.com/thoughtbot/factory_bot) gem.
-- The idea for an in-memory database composed of factories came from [Mirage JS](https://miragejs.com/)
+- The idea for an in-memory database composed of factories came from [Mirage JS](https://miragejs.com/).
