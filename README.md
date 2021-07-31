@@ -154,6 +154,8 @@ Factories are created using the `createFactory` function. It supports two differ
 #### Attributes Notation
 
 ```typescript
+import { createFactory } from 'typical-data';
+
 const contactFactory = createFactory<Contact>({
   id: 1,
   type: 'individual',
@@ -167,6 +169,8 @@ const contactFactory = createFactory<Contact>({
 > With the builder callback notation, make sure to return the factory from the builder callback. This allows the compiler to infer the types of transient params, trait names, and any trait transient params.
 
 ```typescript
+import { createFactory } from 'typical-data';
+
 const contactFactory = createFactory((factory) =>
   factory
     .extends(parentFactory)
@@ -205,8 +209,6 @@ const contactFactory = createFactory<Contact>({
   phone: '(555) 123-4567',
   name: () => faker.name.findName(),
 });
-
-const contact = contactFactory.build();
 ```
 
 > Providing an explicit type argument to `createFactory` will enable type-checking in the factory definition and when building objects.
