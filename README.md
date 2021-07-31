@@ -452,6 +452,14 @@ const businessContactFactory = Factory.define((factory) =>
 
 ### Reset
 
+The state of the database can be reset back to its original state with the `reset` method. This will delete everything in the database and also re-initialize any fixtures. Calling this in your test framework's global hook before each test can be useful to get your database back to a clean slate for each test. Example with Jest:
+
+```typescript
+beforeEach(() => {
+  database.reset()
+});
+```
+
 ## Credits
 
 - The factory DSL is modeled after the [Factory Bot](https://github.com/thoughtbot/factory_bot) gem.
