@@ -162,10 +162,10 @@ const contactFactory = Factory.define(factory =>
 );
 
 const contact1 = contactFactory.build();
-contact1.id // 0
+contact1.id   // 0
 contact1.type // individual
 const contact2 = contactFactory.build();
-contact2.id // 1
+contact2.id   // 1
 contact2.type // business
 ```
 
