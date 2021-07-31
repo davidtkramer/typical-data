@@ -93,13 +93,28 @@ setupServer(
 )
 ```
 ```typescript
+it('creates a contact', async () => {
+  await render(<CreateContactScreen />);
+
+  user.type(screen.getByLabelText('name'), 'Bob');
+  user.type(screen.getByLabelText('email'), 'bob@example.com');
+  user.type(screen.getByLabelText('phone'), '(555) 123-4567');
+  user.click(screen.getByRole('button', { name: /created/ }))
+
+  await screen.findByText(/contact created!/)
+  expect(db.contacts).toHaveLength(1);
+  expect(db.contacts[0].name).toBe('Bob')
+})
+
 it('fetches and displays contact info', async () => {
+  // create a contact and persist it in the database
   const contact = db.contacts.create({
     name: 'Alice',
     email: 'test@example.com',
     phone: '(555) 248-1632'
   });
 
+  // ContactDetails will fetch the contact with the provided id from the api
   await render(<ContactDetails id={contact.id} />);
 
   await screen.findByText(contact.name);
@@ -175,9 +190,61 @@ Sequences can be reset back to 0 with the `rewindSequence` method.
 contactFactory.rewindSequence();
 ```
 
-### Dependent Fields
+### Dependent Attributes
+
+Attributes can be derived from other attributes with the `params` option.
+
+```typescript
+const userFactory = Factory.define(factory =>
+  factory
+    .attributes<User>({
+      id: 1,
+      firstName: 'Alice',
+      lastName: 'Smith',
+      fullName({ params }) {
+        return `${params.firstName} ${params.lastName}`;
+      }
+    })
+);
+
+userFactory.build().fullName; // 'Alice Smith'
+```
 
 ### Transient Params
+
+Transient params are arguments that can be passed to the build method that are not merged into the returned object. They can be used to provide options to attribute builders and afterCreate hooks.
+
+The `transient` method defines the default values for transient params. The types for transient params are inferred by the compiler and will be strongly-typed in the build method, just like regular attributes.
+
+```typescript
+const contactFactory = Factory.define(factory =>
+  factory
+    .transient({ areaCode: 555, downcaseName: false })
+    .attributes<Contact>({
+      id: 1,
+      email: 'email@example.com',
+      phone({ transientParams }) {
+        return `(${transientParams.areaCode}) 123-4567`,
+      }
+      name: 'Alice',
+    })
+    .afterCreate((entity, { transientParams }) => {
+      if (transientParams.downcaseName) {
+        entity.name = entity.name.toLowerCase();
+      }
+    })
+);
+
+// no overrides provided, will use default transient param values
+contactFactory.build()
+contact.phone // '(555) 123-4567'
+contact.name  // 'Alice'
+
+// will use provided transient params
+contactFactory.build({ areaCode: 530, downcaseName: true })
+contact.phone // '(530) 123-4567'
+contact.name  // 'alice'
+```
 
 ### Traits
 
