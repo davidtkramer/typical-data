@@ -375,7 +375,7 @@ users.posts.length // 5
 
 ### After Build Hooks
 
-After create hooks allow you to run custom logic after an entity has been created. The created entity is passed to the callback as well as any transient params.
+After build hooks allow you to run custom logic after an entity has been created. The created entity is passed to the callback as well as any transient params.
 
 ```typescript
 const contactFactory = createFactory((factory) =>
