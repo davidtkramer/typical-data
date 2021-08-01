@@ -538,21 +538,35 @@ describe('DSL', () => {
       expect(user2.id).toBe(20);
     });
 
-    it('can use params in attribute builder', () => {
-      const factory = createFactory((factory) =>
-        factory.attributes<{ id: number; name: string }>({
-          id: 1,
-          name({ params }) {
-            return (params?.id ?? 0) % 2 === 0 ? 'even' : 'odd';
-          },
-        })
-      );
+    it('can reference other static and dynamic attributes regardless of definition order', () => {
+      const factory = createFactory<{
+        title: string;
+        firstName: string;
+        lastName: string;
+        fullName: string;
+        fullNameWithTitle: string;
+      }>({
+        fullNameWithTitle({ entity }) {
+          return `${entity.title} ${entity.fullName}`;
+        },
+        firstName: 'first',
+        fullName({ entity }) {
+          return `${entity.firstName} ${entity.lastName}`;
+        },
+        lastName: 'last',
+        title: 'Mr.',
+      });
 
-      const user1 = factory.build({ id: 10 });
-      expect(user1.name).toBe('even');
+      // defaults
+      const user1 = factory.build();
+      expect(user1.fullNameWithTitle).toBe('Mr. first last');
 
-      const user2 = factory.build({ id: 11 });
-      expect(user2.name).toBe('odd');
+      // with overrides
+      const user2 = factory.build({
+        title: 'Mrs.',
+        firstName: 'firstOverride',
+      });
+      expect(user2.fullNameWithTitle).toBe('Mrs. firstOverride last');
     });
   });
 
@@ -641,6 +655,80 @@ describe('DSL', () => {
 
       const user2 = factory.build('evenOdd', { id: 11 });
       expect(user2.name).toBe('odd');
+    });
+
+    it('derives attributes from static + dynamic attributes regardless of definition order', () => {
+      const factory = createFactory((factory) =>
+        factory
+          .attributes<{
+            title: string;
+            firstName: string;
+            lastName: string;
+            fullName: string;
+            fullNameWithTitle: string;
+          }>({
+            title: '',
+            firstName: '',
+            lastName: '',
+            fullName: '',
+            fullNameWithTitle: '',
+          })
+          .trait('names', {
+            fullNameWithTitle({ entity }) {
+              return `${entity.title} ${entity.fullName}`;
+            },
+            firstName: 'first',
+            fullName({ entity }) {
+              return `${entity.firstName} ${entity.lastName}`;
+            },
+            lastName: 'last',
+            title: 'Mr.',
+          })
+      );
+
+      // defaults
+      const user1 = factory.build('names');
+      expect(user1.fullNameWithTitle).toBe('Mr. first last');
+
+      // with overrides
+      const user2 = factory.build('names', {
+        title: 'Mrs.',
+        firstName: 'firstOverride',
+      });
+      expect(user2.fullNameWithTitle).toBe('Mrs. firstOverride last');
+    });
+
+    it('uses trait defaults before global defaults when deriving attributes', () => {
+      const factory = createFactory((factory) =>
+        factory
+          .attributes<{
+            firstName: string;
+            lastName: string;
+            fullName: string;
+          }>({
+            firstName: 'parentFirst',
+            lastName: 'parentLast',
+            fullName: '',
+          })
+          .trait('trait1', {
+            fullName({ entity }) {
+              return `${entity.firstName} ${entity.lastName}`;
+            },
+            lastName: 'trait1Last',
+          })
+          .trait('trait2', { firstName: 'trait2First', lastName: 'trait2Last' })
+      );
+
+      const user1 = factory.build('trait1');
+      expect(user1.fullName).toBe('parentFirst trait1Last');
+
+      // trait2 firstName should take precedence over global firstName
+      const user2 = factory.build('trait2', 'trait1');
+      expect(user2.fullName).toBe('trait2First trait1Last');
+
+      // trait2 firstName and lastName should take precedence
+      const user3 = factory.build('trait1', 'trait2');
+      expect(user3.fullName).toBe('trait2First trait2Last');
     });
 
     it('can use transientParams in afterBuild', () => {

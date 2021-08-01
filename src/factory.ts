@@ -49,6 +49,7 @@ type AttributeBuilder<
 type AttributeBuilderParams<Entity, TransientParams> = {
   sequence: number;
   params: Partial<Entity>;
+  entity: Entity;
   transientParams: TransientParams;
 };
 
@@ -265,45 +266,77 @@ export function createFactory<
       const entity: Record<string, any> = attributes;
       definition.sequence.count++;
 
-      // apply defaults from traits
-      for (let traitName of traitNames) {
-        const trait = definition.traits[traitName];
+      const globalAttributeProxy = new Proxy(definition.attributeDefaults, {
+        get(target, key) {
+          if (typeof key !== 'string') return;
+          if (key in entity) return entity[key];
 
-        for (let key in trait.attributeDefaults) {
-          if (key in entity) continue;
-          let attribute = trait.attributeDefaults[key];
+          let attribute = target[key];
           if (typeof attribute === 'function') {
             entity[key] = attribute({
               sequence: definition.sequence.count,
               params: { ...attributes, ...entity },
-              transientParams: {
-                ...trait.transientParamDefaults,
-                ...transientParams,
-              },
+              entity: globalAttributeProxy,
+              transientParams,
             });
           } else {
             entity[key] = attribute;
           }
+
+          return entity[key];
+        },
+      });
+
+      // apply trait defaults
+      const allTraitAttributeDefaults: Record<string, any> = {};
+      for (let traitName of traitNames.slice().reverse()) {
+        Object.assign(
+          allTraitAttributeDefaults,
+          definition.traits[traitName].attributeDefaults
+        );
+      }
+
+      for (let traitName of traitNames) {
+        const trait = definition.traits[traitName];
+        // using proxy for all trait attributes in case a derived attribute
+        // references an attribute supplied by another trait
+        const traitAttributeProxy = new Proxy(allTraitAttributeDefaults, {
+          get(target, key) {
+            if (typeof key !== 'string') return;
+            if (key in entity) return entity[key];
+
+            let attribute =
+              key in target ? target[key] : globalAttributeProxy[key];
+            if (typeof attribute === 'function') {
+              entity[key] = attribute({
+                sequence: definition.sequence.count,
+                params: { ...attributes, ...entity },
+                entity: traitAttributeProxy,
+                transientParams: {
+                  ...trait.transientParamDefaults,
+                  ...transientParams,
+                },
+              });
+            } else {
+              entity[key] = attribute;
+            }
+
+            return entity[key];
+          },
+        });
+
+        for (let key in trait.attributeDefaults) {
+          traitAttributeProxy[key];
         }
       }
 
       // apply global defaults
-      for (let key in definition.attributeDefaults) {
-        if (key in entity) continue;
-        let attribute = definition.attributeDefaults[key];
-        if (typeof attribute === 'function') {
-          entity[key] = attribute({
-            sequence: definition.sequence.count,
-            params: { ...attributes, ...entity },
-            transientParams,
-          });
-        } else {
-          entity[key] = attribute;
-        }
+      for (let key in globalAttributeProxy) {
+        globalAttributeProxy[key];
       }
 
       // after build hooks
-      for (let traitName of traitNames.reverse()) {
+      for (let traitName of traitNames.slice().reverse()) {
         const trait = definition.traits[traitName];
         for (let afterBuild of trait.afterBuildHooks) {
           afterBuild({
