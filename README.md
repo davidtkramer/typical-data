@@ -343,8 +343,6 @@ user.isActive; // false
 Traits can define their own transient params and after build hooks using the alternative builder syntax.
 
 ```typescript
-import { postFactory } from './post-factory';
-
 const userFactory = createFactory((factory) =>
   factory
     .attributes<User>({
@@ -352,25 +350,25 @@ const userFactory = createFactory((factory) =>
       email: 'email@example.com',
       name: 'Alice',
       type: 'admin',
-      posts: () => []
+      posts: () => [],
     })
     .trait('withPosts', (trait) =>
       trait
         .transient({ postCount: 0 })
         .attributes({
-          type: 'author'
+          type: 'author',
         })
         .afterBuild(({ entity, transientParams }) => {
           const { postCount } = transientParams;
-          for (let i = 0; i < postCount; i++) {
-            entity.posts.push(...postFactory.buildList(postCount))
-          }
+          entity.posts.push(
+            ...postFactory.buildList(postCount, { userId: entity.id })
+          );
         })
-    })
+    )
 );
 
-const user = userFactory.build('withPosts', { postCount: 5 })
-users.posts.length // 5
+const user = userFactory.build('withPosts', { postCount: 5 });
+users.posts.length; // 5
 ```
 
 ### After Build Hooks
