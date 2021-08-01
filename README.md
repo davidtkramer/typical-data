@@ -251,7 +251,7 @@ Sequences can be reset back to 0 with the `rewindSequence` method.
 contactFactory.rewindSequence();
 ```
 
-### Dependent Attributes
+### Derived Attributes
 
 Attributes can be derived from other attributes with the `params` option.
 
