@@ -258,14 +258,12 @@ Attributes can be derived from other attributes with the `entity` option.
 ```typescript
 const userFactory = createFactory<User>({
   id: 1,
-  firstName: 'Alice',
-  lastName: 'Smith',
+  firstName: () => faker.name.firstName(),
+  lastName: () => faker.name.lastName(),
   fullName({ entity }) {
     return `${entity.firstName} ${entity.lastName}`;
   },
 });
-
-userFactory.build().fullName; // 'Alice Smith'
 ```
 
 ### Transient Params
