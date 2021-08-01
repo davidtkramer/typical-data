@@ -304,7 +304,7 @@ contact.phone // '(530) 123-4567'
 contact.name  // 'alice'
 ```
 
-> With the builder callback notation, we provide a type argument to the `attributes` method instead of `createFactory`. Moving the type allows typescript to infer the type of the transient params because TypeScript does not yet support partial type argument inference.
+> With the builder callback notation, we provide a type argument to the `attributes` method instead of `createFactory`. Moving the type allows the compiler to infer the type of the transient params because TypeScript does not yet support partial type argument inference.
 
 ### Traits
 
