@@ -62,7 +62,7 @@ Define a factory for creating an object.
 import { createFactory } from 'typical-data';
 import { Contact } from './your-types';
 
-const contactFactory = createFactory<Contact>({
+export const contactFactory = createFactory<Contact>({
   id: ({ sequence }) => sequence,
   email: 'email@example.com',
   phone: '(555) 123-4567',
@@ -76,7 +76,7 @@ Create a database with factories.
 import { createDatabase } from 'typical-data';
 import { contactFactory, userFactory } from './factories';
 
-const db = createDatabase({
+export const db = createDatabase({
   factories: {
     contacts: contactFactory,
     users: userFactory,
@@ -165,8 +165,6 @@ const contactFactory = createFactory<Contact>({
 ```
 
 #### Builder Callback Notation
-
-> With the builder callback notation, make sure to return the factory from the builder callback. This allows the compiler to infer the types of transient params, trait names, and any trait transient params.
 
 ```typescript
 import { createFactory } from 'typical-data';
@@ -413,13 +411,15 @@ Factories can extend from one or more parent factories. This is helpful for shar
 
 ```typescript
 const phoneFactory = createFactory((factory) =>
-  factory.transient({ areaCode: 555 }).attributes<{ phone: string }>({
-    countryCode: 1,
-    phoneNumber({ transientParams }) {
-      return `(${transientParams.areaCode}) 123-4567`;
-    },
-    extension: '248',
-  })
+  factory
+    .transient({ areaCode: 555 })
+    .attributes<{ phone: string }>({
+      countryCode: 1,
+      phoneNumber({ transientParams }) {
+        return `(${transientParams.areaCode}) 123-4567`;
+      },
+      extension: '248',
+    })
 );
 
 const timestampFactory = createFactory((factory) =>
@@ -436,16 +436,18 @@ const timestampFactory = createFactory((factory) =>
 );
 
 const contactFactory = createFactory((factory) =>
-  factory.extends(phoneFactory, timestampFactory).attributes<{
-    id: number;
-    name: string;
-    phone: string;
-    createdAt: string;
-    updatedAt: string;
-  }>({
-    id: 1,
-    name: 'Alice',
-  })
+  factory
+    .extends(phoneFactory, timestampFactory)
+    .attributes<{
+      id: number;
+      name: string;
+      phone: string;
+      createdAt: string;
+      updatedAt: string;
+    }>({
+      id: 1,
+      name: 'Alice',
+    })
 );
 
 const contact = contactFactory.build({
@@ -465,17 +467,17 @@ interface BusinessContact extends BaseContact {
   businessName: string;
 }
 
-const baseContactFactory = createFactory((factory) =>
-  factory.attributes<BaseContact>({
-    id: 1,
-    email: 'email@example.com',
-  })
-);
+const baseContactFactory = createFactory<BaseContact>({
+  id: 1,
+  email: 'email@example.com',
+});
 
 const businessContactFactory = createFactory((factory) =>
-  factory.attributes<BusinessContact>({
-    businessName: 'Mega Lo Mart',
-  })
+  factory
+    .extends(baseContactFactory)
+    .attributes<BusinessContact>({
+      businessName: 'Mega Lo Mart',
+    })
 );
 ```
 
