@@ -643,8 +643,8 @@ describe('DSL', () => {
           .attributes<{ id: number; name: string }>({ id: 1, name: 'name' })
           .trait('evenOdd', (trait) =>
             trait.attributes({
-              name({ params }) {
-                return (params?.id ?? 0) % 2 === 0 ? 'even' : 'odd';
+              name({ entity }) {
+                return (entity?.id ?? 0) % 2 === 0 ? 'even' : 'odd';
               },
             })
           )

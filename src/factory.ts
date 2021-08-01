@@ -48,7 +48,6 @@ type AttributeBuilder<
 ) => Entity[Property];
 type AttributeBuilderParams<Entity, TransientParams> = {
   sequence: number;
-  params: Partial<Entity>;
   entity: Entity;
   transientParams: TransientParams;
 };
@@ -275,7 +274,6 @@ export function createFactory<
           if (typeof attribute === 'function') {
             entity[key] = attribute({
               sequence: definition.sequence.count,
-              params: { ...attributes, ...entity },
               entity: globalAttributeProxy,
               transientParams,
             });
@@ -310,7 +308,6 @@ export function createFactory<
             if (typeof attribute === 'function') {
               entity[key] = attribute({
                 sequence: definition.sequence.count,
-                params: { ...attributes, ...entity },
                 entity: traitAttributeProxy,
                 transientParams: {
                   ...trait.transientParamDefaults,

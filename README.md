@@ -253,15 +253,15 @@ contactFactory.rewindSequence();
 
 ### Derived Attributes
 
-Attributes can be derived from other attributes with the `params` option.
+Attributes can be derived from other attributes with the `entity` option.
 
 ```typescript
 const userFactory = createFactory<User>({
   id: 1,
   firstName: 'Alice',
   lastName: 'Smith',
-  fullName({ params }) {
-    return `${params.firstName} ${params.lastName}`;
+  fullName({ entity }) {
+    return `${entity.firstName} ${entity.lastName}`;
   },
 });
 
