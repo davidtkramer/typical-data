@@ -88,15 +88,15 @@ Now you can create and query data in your mock API and in your tests. Example wi
 
 ```typescript
 setupServer(
-    rest.get('/api/contacts/:id', (req, res, ctx) => {
+  rest.get('/api/contacts/:id', (req, res, ctx) => {
     const { id } = req.params;
 
-    const contact = db.contacts.find(contact => contact.id === id);
+    const contact = db.contacts.find((contact) => contact.id === id);
 
     if (!contact) {
       return res(ctx.status(404));
     } else {
-      return res(ctx.json({ contact });
+      return res(ctx.json({ contact }));
     }
   }),
   rest.post('/api/contacts', (req, res, ctx) => {
@@ -105,12 +105,12 @@ setupServer(
     const contact = db.contacts.create({
       name,
       email,
-      phone
+      phone,
     });
 
-    return res(ctx.json({ contact });
-  }),
-)
+    return res(ctx.json({ contact }));
+  })
+);
 ```
 
 ```typescript
