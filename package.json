@@ -1,6 +1,6 @@
 {
   "name": "typical-data",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Test data factory",
   "homepage": "https://github.com/davidtkramer/typical-data",
   "main": "./dist/index.js",
@@ -28,7 +28,7 @@
     "lint-staged": "^10.5.4",
     "prettier": "^2.2.1",
     "ts-jest": "^26.5.5",
-    "typescript": "^4.2.4"
+    "typescript": "^4.3.5"
   },
   "lint-staged": {
     "src/**/*.{js,ts}": [
