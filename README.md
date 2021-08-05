@@ -411,11 +411,9 @@ const phoneFactory = createFactory((factory) =>
   factory
     .transient({ areaCode: 555 })
     .attributes<{ phone: string }>({
-      countryCode: 1,
-      phoneNumber({ transientParams }) {
+      phone({ transientParams }) {
         return `(${transientParams.areaCode}) 123-4567`;
       },
-      extension: '248',
     })
 );
 
