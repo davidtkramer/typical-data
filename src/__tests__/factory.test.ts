@@ -1,18 +1,19 @@
 import { createFactory } from '../factory';
 
 describe('build', () => {
+  type User = {
+    id: number;
+    type: 'standard' | 'bot';
+    role: 'member' | 'admin' | 'owner';
+    name: string;
+    hooks: Array<string>;
+  };
   const factory = createFactory((factory) =>
     factory
       .transient({
         skipGlobalHook: false,
       })
-      .attributes<{
-        id: number;
-        type: 'standard' | 'bot';
-        role: 'member' | 'admin' | 'owner';
-        name: string;
-        hooks: Array<string>;
-      }>({
+      .attributes<User>({
         id: 1,
         type: 'standard',
         role: 'member',
@@ -162,6 +163,15 @@ describe('build', () => {
 
     const user2 = factory.build('bot', 'owner', { skipGlobalHook: true });
     expect(user2.hooks).toEqual(['bot1', 'bot2', 'owner']);
+  });
+
+  it('type checks attributes and transient params', () => {
+    // @ts-expect-error - id must be number
+    factory.build({ id: '1' });
+    // @ts-expect-error - skipGlobalHook must be boolean
+    factory.build({ skipGlobalHook: 'true' });
+    // @ts-expect-error - skipBotHook must be boolean
+    factory.build('bot', { skipBotHook: 'true ' });
   });
 
   it('rejects trait transient params when no traits are provided', () => {

@@ -147,12 +147,10 @@ type AttributeBuilder<
 }) => Entity[Property];
 
 export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
-  build(entity?: Partial<Entity & GlobalTransientParams>): Entity;
-
-  build<TraitNames extends keyof Traits>(
+  build<TraitNames extends keyof Traits = never>(
     ...params:
       | [
-          ...traits: [TraitNames, ...Array<TraitNames>],
+          ...traits: Array<TraitNames>,
           params: Partial<
             Entity &
               GlobalTransientParams &
@@ -162,16 +160,11 @@ export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
       | Array<keyof Traits>
   ): Entity;
 
-  buildList(
-    count: number,
-    entity?: Partial<Entity & GlobalTransientParams>
-  ): Array<Entity>;
-
-  buildList<TraitNames extends keyof Traits>(
+  buildList<TraitNames extends keyof Traits = never>(
     count: number,
     ...params:
       | [
-          ...traits: [TraitNames, ...Array<TraitNames>],
+          ...traits: Array<TraitNames>,
           params: Partial<
             Entity &
               GlobalTransientParams &

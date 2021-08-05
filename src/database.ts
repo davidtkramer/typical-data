@@ -58,6 +58,9 @@ type EntityDatabase<
   fixtures: FM;
 };
 
+/**
+ * Creates a database with the given factories and fixture callback.
+ */
 export function createDatabase<
   FC extends FactoryConfig,
   FM extends FixtureMap<FC>
