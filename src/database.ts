@@ -147,8 +147,8 @@ export function createDatabase<
   return database as EntityDatabase<FC, FM>;
 }
 
-function isFactory(arg: any): arg is EntityFactory<unknown, unknown, unknown> {
-  const factory = arg as EntityFactory<unknown, unknown, unknown>;
+function isFactory(arg: any): arg is EntityFactory<any, any, any> {
+  const factory = arg as EntityFactory<any, any, any>;
   return (
     typeof factory === 'object' &&
     typeof factory.build === 'function' &&
