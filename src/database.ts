@@ -9,7 +9,9 @@ type EntityFromFactory<Factory> = Factory extends EntityFactory<
   : never;
 
 type FixtureMap<FC extends FactoryConfig> = {
-  [Property in keyof FC]: Record<string, EntityFromFactory<FC[Property]>>;
+  [Property in keyof FC]?: FC[Property] extends FactoryMap
+    ? Record<string, EntityFromFactory<FC[Property][keyof FC[Property]]>>
+    : Record<string, EntityFromFactory<FC[Property]>>;
 };
 
 interface FactoryMap {

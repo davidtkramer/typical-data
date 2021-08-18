@@ -52,6 +52,23 @@ describe('Database factory', () => {
       expect(db.fixtures.users.current).toBeDefined();
     });
 
+    it('does not require named fixtures for every entity type', () => {
+      const db = createDatabase({
+        factories: {
+          users: createFactory<{ id: string }>({ id: '1' }),
+          contacts: createFactory<{ id: string }>({ id: '1' }),
+        },
+        fixtures({ users }) {
+          return {
+            // okay to not provide fixtures for contacts
+            users: { current: users.create() },
+          };
+        },
+      });
+
+      expect(db.fixtures.users.current).toBeDefined();
+    });
+
     it('handles nested factories', () => {
       type BaseContact = { id: number; type: 'business' | 'individual' };
       interface IndividualContact extends BaseContact {
@@ -82,6 +99,14 @@ describe('Database factory', () => {
             ),
           },
         },
+        fixtures(self) {
+          return {
+            contacts: {
+              contact1: self.contacts.business.create(),
+              contact2: self.contacts.individual.create(),
+            },
+          };
+        },
       });
 
       db.contacts.individual.create();
@@ -89,19 +114,25 @@ describe('Database factory', () => {
       db.contacts.business.create();
       db.contacts.business.createList(1);
 
-      expect(db.contacts).toHaveLength(4);
+      expect(db.contacts).toHaveLength(6);
+      expect(db.fixtures.contacts.contact1).toBeDefined();
+      expect(db.fixtures.contacts.contact2).toBeDefined();
 
       // can store mix of entity types
-      expect(db.contacts[0].type).toBe('individual');
+      expect(db.contacts[0].type).toBe('business');
       expect(db.contacts[1].type).toBe('individual');
-      expect(db.contacts[2].type).toBe('business');
-      expect(db.contacts[3].type).toBe('business');
+      expect(db.contacts[2].type).toBe('individual');
+      expect(db.contacts[3].type).toBe('individual');
+      expect(db.contacts[4].type).toBe('business');
+      expect(db.contacts[5].type).toBe('business');
 
       // shares sequence between entity types
       expect(db.contacts[0].id).toBe(0);
       expect(db.contacts[1].id).toBe(1);
       expect(db.contacts[2].id).toBe(2);
       expect(db.contacts[3].id).toBe(3);
+      expect(db.contacts[4].id).toBe(4);
+      expect(db.contacts[5].id).toBe(5);
 
       db.contacts.reset();
 
