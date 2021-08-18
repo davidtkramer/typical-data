@@ -115,6 +115,8 @@ describe('Database factory', () => {
       db.contacts.business.createList(1);
 
       expect(db.contacts).toHaveLength(6);
+      expect(db.fixtures.contacts.contact1).toBeDefined();
+      expect(db.fixtures.contacts.contact2).toBeDefined();
 
       // can store mix of entity types
       expect(db.contacts[0].type).toBe('business');
