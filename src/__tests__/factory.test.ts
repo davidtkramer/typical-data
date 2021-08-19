@@ -265,6 +265,7 @@ describe('DSL', () => {
       interface BaseContact {
         id: number;
         phone: string;
+        meta?: string;
       }
       const baseFactory = createFactory((factory) =>
         factory
@@ -275,6 +276,7 @@ describe('DSL', () => {
             id: 1,
             phone: ({ transientParams }) =>
               `(${transientParams.areaCode}) 123-4567`,
+            meta: undefined,
           })
           .trait('invalidPhone', { phone: 'asdf' })
           .trait('withCountryCode', (trait) =>
