@@ -29,6 +29,7 @@ interface EntityStore<
   create: Factory['build'];
   createList: Factory['buildList'];
   reset(): Array<Entity>;
+  all(): Array<Entity>;
 }
 
 interface ParentEntityStore<
@@ -36,6 +37,7 @@ interface ParentEntityStore<
   Entity = EntityFromFactory<Factory>
 > extends Array<Entity> {
   reset(): Array<Entity>;
+  all(): Array<Entity>;
 }
 
 type EntityStores<FC extends FactoryConfig> = {
@@ -103,6 +105,9 @@ export function createDatabase<
           factory.rewindSequence();
           return entities.splice(0, entities.length);
         },
+        all() {
+          return [...entities];
+        },
       });
       database[key] = store;
     } else if (typeof item === 'object') {
@@ -112,6 +117,9 @@ export function createDatabase<
         reset() {
           sequence.count = -1;
           return entities.splice(0, entities.length);
+        },
+        all() {
+          return [...entities];
         },
       });
 

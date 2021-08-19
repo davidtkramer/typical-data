@@ -219,6 +219,40 @@ describe('entity store', () => {
     });
   });
 
+  describe('all', () => {
+    it('returns all entities for regular entity store', () => {
+      db.users.createList(2);
+
+      const users = db.users.all();
+
+      expect(users).toHaveLength(2);
+      // returns shallow copy of entities array
+      db.users.create();
+      expect(users).toHaveLength(2);
+    });
+
+    it('returns all entities for polymorphic entity store', () => {
+      const db = createDatabase({
+        factories: {
+          contacts: {
+            individual: createFactory({ id: 1, fullName: '' }),
+            business: createFactory({ id: 1, businessName: '' }),
+          },
+        },
+      });
+
+      db.contacts.individual.create();
+      db.contacts.business.create();
+
+      const contacts = db.contacts.all();
+
+      expect(contacts).toHaveLength(2);
+      // returns shallow copy of entities array
+      db.contacts.individual.create();
+      expect(contacts).toHaveLength(2);
+    });
+  });
+
   describe('reset', () => {
     it('resets entity store', () => {
       db.users.createList(2);
