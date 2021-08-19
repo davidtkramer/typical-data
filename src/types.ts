@@ -9,10 +9,11 @@ export type TransientParamsForTraits<
 /**
  * Converts a union of values to an intersection of values.
  */
-export type Intersect<U> = {
-  [K in GetKeys<U>]: U extends Record<K, infer T> ? T : never;
-};
-type GetKeys<U> = U extends Record<infer K, any> ? K : never;
+export type Intersect<T> = (T extends any ? (x: T) => any : never) extends (
+  x: infer R
+) => any
+  ? R
+  : never;
 
 /**
  * Makes optional the keys on Child that also exist on Parent.
