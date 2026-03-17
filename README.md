@@ -149,7 +149,7 @@ it('creates a contact', async () => {
 
 Factories provide a flexible DSL to customize how your objects are created. Factories are designed to integrate with a [database](#database), but can also be used standalone.
 
-Factories are created using the `createFactory` function. It supports two different forms to define factories: an "attributes" notation and a "builder callback" notation. The "attributes" notation lets you define factories that just specify attributes. The "builder callback" notation lets you define more complex factories with attributes, [inheritance](#extending-factories), [transient params](#transient-params), [traits](#traits), and [afterBuild](#after-build-hooks) hooks.
+Factories are created using the `createFactory` function. It supports two different forms to define factories: an "attributes" notation and a "builder callback" notation. The "attributes" notation lets you define factories that just specify attributes. The "builder callback" notation lets you define more complex factories with attributes, [inheritance](#extending-factories), [transient params](#transient-params), [traits](#traits), [afterBuild](#after-build-hooks) hooks, and async [create hooks](#create-hooks).
 
 #### Attributes Notation
 
@@ -209,7 +209,7 @@ const contactFactory = createFactory<Contact>({
 });
 ```
 
-The build method accepts attributes that will override the defaults defined on the factory.
+The `build` method accepts attributes that will override the defaults defined on the factory. Use `build` when you want an in-memory object without any persistence behavior.
 
 ```typescript
 const businessContact = contactFactory.build({
@@ -398,6 +398,32 @@ contact.name; // 'Alice'
 // will use provided transient params
 contactFactory.build({ upcaseName: true });
 contact.name; // 'ALICE'
+```
+
+### Create Hooks
+
+Factories also support an async `create` path. `create` always runs `afterBuild` hooks first, then calls `toCreate` if it is defined, and finally runs `afterCreate` hooks. If no `toCreate` hook is defined, `create` resolves the built entity unchanged.
+
+```typescript
+const contactFactory = createFactory((factory) =>
+  factory
+    .attributes<Contact>({
+      id: 1,
+      email: 'email@example.com',
+      phone: '(555) 123-4567',
+      name: 'Alice',
+    })
+    .toCreate(async ({ entity }) => {
+      await db.contacts.insert(entity);
+      return entity;
+    })
+    .afterCreate(async ({ entity }) => {
+      await audit.log(`created:${entity.id}`);
+    })
+);
+
+const built = contactFactory.build();
+const created = await contactFactory.create();
 ```
 
 ### Extending Factories
