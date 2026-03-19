@@ -1,5 +1,7 @@
-import { createDatabase } from '../database';
-import { createFactory } from '../factory';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { createDatabase } from '../database.js';
+import { createFactory } from '../factory.js';
 
 interface User {
   id: number;

@@ -3,22 +3,26 @@ import {
   TransientParamsForTraits,
   ExtendedAttributes,
   Intersect,
-} from './types';
+} from './types.js';
 
 interface FactoryBuilder<
   OuterEntity = unknown,
   OuterGlobalTransientParams = unknown,
-  Traits = {} // eslint-disable-line @typescript-eslint/ban-types
+  Traits = {}, // eslint-disable-line @typescript-eslint/ban-types
+  CreatedEntity = OuterEntity
 > {
   extends<
-    ParentFactories extends Array<EntityFactory<unknown, unknown, unknown>>
+    ParentFactories extends Array<
+      EntityFactory<unknown, unknown, unknown, unknown>
+    >
   >(
     ...parentFactories: ParentFactories
   ): Omit<
     FactoryBuilder<
       Intersect<EntityFromFactory<ParentFactories[number]>>,
       Intersect<TransientParamsFromFactory<ParentFactories[number]>>,
-      Intersect<TraitsFromFactory<ParentFactories[number]>>
+      Intersect<TraitsFromFactory<ParentFactories[number]>>,
+      Intersect<CreatedEntityFromFactory<ParentFactories[number]>>
     >,
     'extends'
   >;
@@ -29,7 +33,8 @@ interface FactoryBuilder<
     FactoryBuilder<
       OuterEntity,
       OuterGlobalTransientParams & GlobalTransientParams,
-      Traits
+      Traits,
+      CreatedEntity
     >,
     'extends' | 'transient'
   >;
@@ -39,7 +44,9 @@ interface FactoryBuilder<
       ExtendedAttributes<OuterEntity, Entity>,
       OuterGlobalTransientParams
     >
-  ): FinalBuilder<FactoryBuilder<Entity, OuterGlobalTransientParams, Traits>>;
+  ): FinalBuilder<
+    FactoryBuilder<Entity, OuterGlobalTransientParams, Traits, CreatedEntity>
+  >;
 
   trait<
     TraitName extends string,
@@ -61,7 +68,8 @@ interface FactoryBuilder<
     FactoryBuilder<
       OuterEntity,
       OuterGlobalTransientParams,
-      Traits & Record<TraitName, TraitTransientParams>
+      Traits & Record<TraitName, TraitTransientParams>,
+      CreatedEntity
     >
   >;
 
@@ -71,30 +79,32 @@ interface FactoryBuilder<
       transientParams: OuterGlobalTransientParams;
     }) => void
   ): FinalBuilder<
-    FactoryBuilder<OuterEntity, OuterGlobalTransientParams, Traits>
+    FactoryBuilder<
+      OuterEntity,
+      OuterGlobalTransientParams,
+      Traits,
+      CreatedEntity
+    >
   >;
 
-  toCreate(
+  toCreate<NewCreatedEntity>(
     toCreateCallback: (params: {
       entity: OuterEntity;
       transientParams: OuterGlobalTransientParams;
-    }) => OuterEntity | Promise<OuterEntity>
+    }) => NewCreatedEntity | Promise<NewCreatedEntity>
   ): FinalBuilder<
-    FactoryBuilder<OuterEntity, OuterGlobalTransientParams, Traits>
-  >;
-
-  afterCreate(
-    afterCreateCallback: (params: {
-      entity: OuterEntity;
-      transientParams: OuterGlobalTransientParams;
-    }) => void | Promise<void>
-  ): FinalBuilder<
-    FactoryBuilder<OuterEntity, OuterGlobalTransientParams, Traits>
+    FactoryBuilder<
+      OuterEntity,
+      OuterGlobalTransientParams,
+      Traits,
+      NewCreatedEntity
+    >
   >;
 }
 
 type EntityFromFactory<Factory> = Factory extends EntityFactory<
   infer Entity,
+  unknown,
   unknown,
   unknown
 >
@@ -104,6 +114,7 @@ type EntityFromFactory<Factory> = Factory extends EntityFactory<
 type TransientParamsFromFactory<Factory> = Factory extends EntityFactory<
   unknown,
   infer TransientParams,
+  unknown,
   unknown
 >
   ? TransientParams
@@ -112,9 +123,19 @@ type TransientParamsFromFactory<Factory> = Factory extends EntityFactory<
 type TraitsFromFactory<Factory> = Factory extends EntityFactory<
   unknown,
   unknown,
-  infer Traits
+  infer Traits,
+  unknown
 >
   ? Traits
+  : never;
+
+type CreatedEntityFromFactory<Factory> = Factory extends EntityFactory<
+  unknown,
+  unknown,
+  unknown,
+  infer CreatedEntity
+>
+  ? CreatedEntity
   : never;
 
 interface TraitBuilder<
@@ -142,13 +163,6 @@ interface TraitBuilder<
       transientParams: GlobalTransientParams & TransientParams;
     }) => void
   ): FinalBuilder<TraitBuilder<Entity, GlobalTransientParams, TransientParams>>;
-
-  afterCreate(
-    afterCreateCallback: (params: {
-      entity: Entity;
-      transientParams: GlobalTransientParams & TransientParams;
-    }) => void | Promise<void>
-  ): FinalBuilder<TraitBuilder<Entity, GlobalTransientParams, TransientParams>>;
 }
 
 type EntityAttributes<Entity, TransientParams> = {
@@ -171,7 +185,12 @@ type AttributeBuilder<
   transientParams: TransientParams;
 }) => Entity[Property];
 
-export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
+export interface EntityFactory<
+  Entity,
+  GlobalTransientParams,
+  Traits,
+  CreatedEntity = Entity
+> {
   build<TraitNames extends keyof Traits = never>(
     ...params:
       | [
@@ -210,7 +229,7 @@ export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
           >
         ]
       | Array<keyof Traits>
-  ): Promise<Entity>;
+  ): Promise<CreatedEntity>;
 
   createList<TraitNames extends keyof Traits = never>(
     count: number,
@@ -224,7 +243,7 @@ export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
           >
         ]
       | Array<keyof Traits>
-  ): Promise<Array<Entity>>;
+  ): Promise<Array<CreatedEntity>>;
 
   rewindSequence(): void;
 
@@ -244,11 +263,9 @@ interface FactoryDefinition {
       attributeDefaults: Record<string, any>;
       transientParamDefaults: Record<string, any>;
       afterBuildHooks: Array<(...args: Array<any>) => void>;
-      afterCreateHooks: Array<(...args: Array<any>) => any>;
     }
   >;
   afterBuildHooks: Array<(...args: Array<any>) => void>;
-  afterCreateHooks: Array<(...args: Array<any>) => any>;
   sequence: { count: number };
 }
 
@@ -258,20 +275,22 @@ interface FactoryDefinition {
 export function createFactory<
   Entity,
   GlobalTransientParams = unknown,
-  Traits = unknown // eslint-disable-line @typescript-eslint/ban-types
+  Traits = unknown, // eslint-disable-line @typescript-eslint/ban-types
+  CreatedEntity = Entity
 >(
   attributesOrBuilder:
     | EntityAttributes<Entity, GlobalTransientParams>
     | ((
         builder: FactoryBuilder
-      ) => FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>)
-): EntityFactory<Entity, GlobalTransientParams, Traits> {
+      ) => FinalBuilder<
+        FactoryBuilder<Entity, GlobalTransientParams, Traits, CreatedEntity>
+      >)
+): EntityFactory<Entity, GlobalTransientParams, Traits, CreatedEntity> {
   const definition: FactoryDefinition = {
     attributeDefaults: {},
     transientParamDefaults: {},
     traits: {},
     afterBuildHooks: [],
-    afterCreateHooks: [],
     sequence: { count: -1 },
   };
 
@@ -282,14 +301,20 @@ export function createFactory<
     definition.attributeDefaults = attributesOrBuilder;
   }
 
-  return createFactoryInternal<Entity, GlobalTransientParams, Traits>(
-    definition
-  );
+  return createFactoryInternal<
+    Entity,
+    GlobalTransientParams,
+    Traits,
+    CreatedEntity
+  >(definition);
 }
 
-function createFactoryInternal<Entity, GlobalTransientParams, Traits>(
-  definition: FactoryDefinition
-) {
+function createFactoryInternal<
+  Entity,
+  GlobalTransientParams,
+  Traits,
+  CreatedEntity
+>(definition: FactoryDefinition) {
   function parseBuildArgs(args: Array<any>) {
     let [params, ...traitNames] = args.reverse();
     if (typeof params === 'string') {
@@ -408,7 +433,12 @@ function createFactoryInternal<Entity, GlobalTransientParams, Traits>(
     return { entity: entity as Entity, transientParams, traitNames };
   }
 
-  const factory: EntityFactory<Entity, GlobalTransientParams, Traits> = {
+  const factory: EntityFactory<
+    Entity,
+    GlobalTransientParams,
+    Traits,
+    CreatedEntity
+  > = {
     build(...args: Array<any>) {
       return buildEntity(args).entity;
     },
@@ -422,30 +452,13 @@ function createFactoryInternal<Entity, GlobalTransientParams, Traits>(
     },
 
     async create(...args: Array<any>) {
-      const { entity, transientParams, traitNames } = buildEntity(args);
+      const { entity, transientParams } = buildEntity(args);
 
       const createdEntity = definition.toCreate
         ? await definition.toCreate({ entity, transientParams })
         : entity;
 
-      for (const traitName of traitNames.slice().reverse()) {
-        const trait = definition.traits[traitName];
-        for (const afterCreate of trait.afterCreateHooks) {
-          await afterCreate({
-            entity: createdEntity,
-            transientParams: {
-              ...trait.transientParamDefaults,
-              ...transientParams,
-            },
-          });
-        }
-      }
-
-      for (const afterCreate of definition.afterCreateHooks) {
-        await afterCreate({ entity: createdEntity, transientParams });
-      }
-
-      return createdEntity as Entity;
+      return createdEntity as CreatedEntity;
     },
 
     async createList(count: number, ...args: any[]) {
@@ -473,7 +486,7 @@ function createFactoryInternal<Entity, GlobalTransientParams, Traits>(
 
 function createFactoryBuilder(definition: FactoryDefinition) {
   const factoryBuilder: FactoryBuilder<any, any, any> = {
-    extends(...parents: Array<EntityFactory<any, any, any>>) {
+    extends(...parents: Array<EntityFactory<any, any, any, any>>) {
       for (const parent of parents) {
         const parentDefinition = parent.getDefinition();
         definition.attributeDefaults = {
@@ -489,7 +502,6 @@ function createFactoryBuilder(definition: FactoryDefinition) {
           definition.traits[traitName] = { ...trait };
         }
         definition.afterBuildHooks.push(...parentDefinition.afterBuildHooks);
-        definition.afterCreateHooks.push(...parentDefinition.afterCreateHooks);
         definition.toCreate = parentDefinition.toCreate;
       }
       return factoryBuilder;
@@ -507,7 +519,6 @@ function createFactoryBuilder(definition: FactoryDefinition) {
         attributeDefaults: {},
         transientParamDefaults: {},
         afterBuildHooks: [],
-        afterCreateHooks: [],
       };
       if (typeof traitBuilderArg === 'function') {
         const traitBuilder: TraitBuilder<any, any, any> = {
@@ -523,10 +534,6 @@ function createFactoryBuilder(definition: FactoryDefinition) {
             definition.traits[name].afterBuildHooks.push(afterBuildCallback);
             return traitBuilder;
           },
-          afterCreate(afterCreateCallback) {
-            definition.traits[name].afterCreateHooks.push(afterCreateCallback);
-            return traitBuilder;
-          },
         };
         traitBuilderArg(traitBuilder);
       } else {
@@ -540,10 +547,6 @@ function createFactoryBuilder(definition: FactoryDefinition) {
     },
     toCreate(toCreateCallback) {
       definition.toCreate = toCreateCallback;
-      return factoryBuilder;
-    },
-    afterCreate(afterCreateCallback) {
-      definition.afterCreateHooks.push(afterCreateCallback);
       return factoryBuilder;
     },
   };

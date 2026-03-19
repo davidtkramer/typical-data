@@ -1,4 +1,5 @@
-import { createFactory } from '../factory';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createFactory } from '../factory.js';
 
 describe('build', () => {
   type User = {
@@ -808,7 +809,7 @@ describe('DSL', () => {
       });
     });
 
-    it('runs toCreate after afterBuild and before afterCreate hooks', async () => {
+    it('runs toCreate after afterBuild hooks', async () => {
       const hookCalls: Array<string> = [];
       const factory = createFactory((factory) =>
         factory
@@ -816,11 +817,6 @@ describe('DSL', () => {
           .attributes<{ name: string }>({
             name: 'Alice',
           })
-          .trait('admin', (trait) =>
-            trait.afterCreate(({ entity, transientParams }) => {
-              hookCalls.push(`trait:${entity.name}:${transientParams.suffix}`);
-            })
-          )
           .afterBuild(({ entity }) => {
             hookCalls.push('afterBuild');
             entity.name = entity.name.toUpperCase();
@@ -830,20 +826,12 @@ describe('DSL', () => {
             entity.name = `${entity.name}:${transientParams.suffix}`;
             return entity;
           })
-          .afterCreate(async ({ entity, transientParams }) => {
-            hookCalls.push(`global:${entity.name}:${transientParams.suffix}`);
-          })
       );
 
-      const user = await factory.create('admin');
+      const user = await factory.create();
 
       expect(user.name).toBe('ALICE:persisted');
-      expect(hookCalls).toEqual([
-        'afterBuild',
-        'toCreate',
-        'trait:ALICE:persisted:persisted',
-        'global:ALICE:persisted:persisted',
-      ]);
+      expect(hookCalls).toEqual(['afterBuild', 'toCreate']);
     });
 
     it('creates lists sequentially', async () => {
@@ -868,7 +856,7 @@ describe('DSL', () => {
       expect(hookCalls).toEqual(['start:0', 'end:0', 'start:1', 'end:1']);
     });
 
-    it('inherits toCreate and afterCreate hooks', async () => {
+    it('inherits toCreate hooks', async () => {
       const hookCalls: Array<string> = [];
       const parentFactory = createFactory((factory) =>
         factory
@@ -881,26 +869,17 @@ describe('DSL', () => {
             entity.persisted = true;
             return entity;
           })
-          .afterCreate(async ({ entity }) => {
-            hookCalls.push(`parent-afterCreate:${entity.id}`);
-          })
       );
 
       const childFactory = createFactory((factory) =>
-        factory.extends(parentFactory).afterCreate(async ({ entity }) => {
-          hookCalls.push(`child-afterCreate:${entity.id}`);
-        })
+        factory.extends(parentFactory)
       );
 
       await expect(childFactory.create()).resolves.toEqual({
         id: 0,
         persisted: true,
       });
-      expect(hookCalls).toEqual([
-        'parent-toCreate',
-        'parent-afterCreate:0',
-        'child-afterCreate:0',
-      ]);
+      expect(hookCalls).toEqual(['parent-toCreate']);
     });
   });
 });

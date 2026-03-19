@@ -24,6 +24,7 @@ Typical Data is a library for building mock data with factories and querying it 
   - [Transient Params](#transient-params)
   - [Traits](#traits)
   - [After Build Hooks](#after-build-hooks)
+  - [Create Hooks](#create-hooks)
   - [Extending Factories](#extending-factories)
 - [Database](#database)
   - [Database Setup](#database-setup)
@@ -42,16 +43,16 @@ Typical Data helps bridge the gap between your tests and your mock API. This lib
 
 ## Installation
 
+Install with pnpm:
+
+```
+pnpm add -D typical-data
+```
+
 Install with npm:
 
 ```
 npm install --save-dev typical-data
-```
-
-Install with yarn:
-
-```
-yarn add --dev typical-data
 ```
 
 ## Quick Start
@@ -402,7 +403,7 @@ contact.name; // 'ALICE'
 
 ### Create Hooks
 
-Factories also support an async `create` path. `create` always runs `afterBuild` hooks first, then calls `toCreate` if it is defined, and finally runs `afterCreate` hooks. If no `toCreate` hook is defined, `create` resolves the built entity unchanged.
+Factories also support an async `create` path. `build` stays synchronous and returns the built entity type. `create` always runs `afterBuild` hooks first, then calls `toCreate` if it is defined. If no `toCreate` hook is defined, `create` resolves the built entity unchanged.
 
 ```typescript
 const contactFactory = createFactory((factory) =>
@@ -414,16 +415,32 @@ const contactFactory = createFactory((factory) =>
       name: 'Alice',
     })
     .toCreate(async ({ entity }) => {
-      await db.contacts.insert(entity);
-      return entity;
-    })
-    .afterCreate(async ({ entity }) => {
-      await audit.log(`created:${entity.id}`);
+      return await db.contacts.insert(entity);
     })
 );
 
 const built = contactFactory.build();
 const created = await contactFactory.create();
+```
+
+If `toCreate` returns a different shape than `build`, that type is inferred automatically:
+
+```typescript
+const userFactory = createFactory((factory) =>
+  factory
+    .attributes<{ name: string }>({
+      name: 'Alice',
+    })
+    .toCreate(async ({ entity }) => {
+      return db.users.insert(entity);
+    })
+);
+
+const built = userFactory.build();
+//    ^? { name: string }
+
+const created = await userFactory.create();
+//    ^? inferred from db.users.insert(...)
 ```
 
 ### Extending Factories
@@ -598,10 +615,9 @@ db.users.filter((user) => user.type === 'admin');
 
 ### Reset
 
-The state of the database can be reset back to its original state with the `reset` method. This will delete everything in the database and also re-initialize any fixtures. Calling this in a global hook before each test can be useful to get your database back to a clean slate for each test. Example with Jest:
+The state of the database can be reset back to its original state with the `reset` method. This will delete everything in the database and also re-initialize any fixtures. Calling this in a global hook before each test can be useful to get your database back to a clean slate for each test.
 
 ```typescript
-// jest.setup-after-env.js
 import { db } from './your-db';
 
 beforeEach(() => {
