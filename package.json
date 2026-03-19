@@ -1,16 +1,24 @@
 {
   "name": "typical-data",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "Test data factory",
   "homepage": "https://github.com/davidtkramer/typical-data",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "clean": "rm -rf dist/*",
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "jest",
-    "prepack": "yarn clean && yarn build",
+    "test": "vitest run",
+    "typecheck": "vitest run --typecheck.only",
+    "prepack": "pnpm clean && pnpm build",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "format": "prettier --write 'src/**/*.{js,ts}'",
     "prepare": "husky install"
@@ -19,21 +27,21 @@
   "author": "David Kramer",
   "license": "MIT",
   "devDependencies": {
-    "@types/jest": "^26.0.23",
+    "@types/node": "25.5.0",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
     "eslint": "^7.25.0",
     "husky": "^6.0.0",
-    "jest": "^26.6.3",
     "lint-staged": "^10.5.4",
     "prettier": "^2.2.1",
-    "ts-jest": "^26.5.5",
-    "typescript": "^4.3.5"
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
   },
   "lint-staged": {
     "src/**/*.{js,ts}": [
       "prettier --write",
       "eslint --fix --max-warnings=0"
     ]
-  }
+  },
+  "packageManager": "pnpm@10.32.1"
 }

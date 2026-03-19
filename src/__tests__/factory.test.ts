@@ -1,4 +1,5 @@
-import { createFactory } from '../factory';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createFactory } from '../factory.js';
 
 describe('build', () => {
   type User = {
@@ -786,6 +787,99 @@ describe('DSL', () => {
 
       const user = factory.build({ globalTransientId: 20 });
       expect(user.id).toBe(20);
+    });
+  });
+
+  describe('create', () => {
+    it('resolves built entity when no toCreate hook is defined', async () => {
+      const factory = createFactory((factory) =>
+        factory
+          .attributes<{ id: number; name: string }>({
+            id: ({ sequence }) => sequence,
+            name: 'Alice',
+          })
+          .afterBuild(({ entity }) => {
+            entity.name = entity.name.toUpperCase();
+          })
+      );
+
+      await expect(factory.create()).resolves.toEqual({
+        id: 0,
+        name: 'ALICE',
+      });
+    });
+
+    it('runs toCreate after afterBuild hooks', async () => {
+      const hookCalls: Array<string> = [];
+      const factory = createFactory((factory) =>
+        factory
+          .transient({ suffix: 'persisted' })
+          .attributes<{ name: string }>({
+            name: 'Alice',
+          })
+          .afterBuild(({ entity }) => {
+            hookCalls.push('afterBuild');
+            entity.name = entity.name.toUpperCase();
+          })
+          .toCreate(async ({ entity, transientParams }) => {
+            hookCalls.push('toCreate');
+            entity.name = `${entity.name}:${transientParams.suffix}`;
+            return entity;
+          })
+      );
+
+      const user = await factory.create();
+
+      expect(user.name).toBe('ALICE:persisted');
+      expect(hookCalls).toEqual(['afterBuild', 'toCreate']);
+    });
+
+    it('creates lists sequentially', async () => {
+      const hookCalls: Array<string> = [];
+      const factory = createFactory((factory) =>
+        factory
+          .attributes<{ id: number }>({
+            id: ({ sequence }) => sequence,
+          })
+          .toCreate(async ({ entity }) => {
+            hookCalls.push(`start:${entity.id}`);
+            await Promise.resolve();
+            hookCalls.push(`end:${entity.id}`);
+            return entity;
+          })
+      );
+
+      await expect(factory.createList(2)).resolves.toEqual([
+        { id: 0 },
+        { id: 1 },
+      ]);
+      expect(hookCalls).toEqual(['start:0', 'end:0', 'start:1', 'end:1']);
+    });
+
+    it('inherits toCreate hooks', async () => {
+      const hookCalls: Array<string> = [];
+      const parentFactory = createFactory((factory) =>
+        factory
+          .attributes<{ id: number; persisted: boolean }>({
+            id: ({ sequence }) => sequence,
+            persisted: false,
+          })
+          .toCreate(async ({ entity }) => {
+            hookCalls.push('parent-toCreate');
+            entity.persisted = true;
+            return entity;
+          })
+      );
+
+      const childFactory = createFactory((factory) =>
+        factory.extends(parentFactory)
+      );
+
+      await expect(childFactory.create()).resolves.toEqual({
+        id: 0,
+        persisted: true,
+      });
+      expect(hookCalls).toEqual(['parent-toCreate']);
     });
   });
 });

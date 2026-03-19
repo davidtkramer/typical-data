@@ -3,22 +3,26 @@ import {
   TransientParamsForTraits,
   ExtendedAttributes,
   Intersect,
-} from './types';
+} from './types.js';
 
 interface FactoryBuilder<
   OuterEntity = unknown,
   OuterGlobalTransientParams = unknown,
-  Traits = {} // eslint-disable-line @typescript-eslint/ban-types
+  Traits = {}, // eslint-disable-line @typescript-eslint/ban-types
+  CreatedEntity = OuterEntity
 > {
   extends<
-    ParentFactories extends Array<EntityFactory<unknown, unknown, unknown>>
+    ParentFactories extends Array<
+      EntityFactory<unknown, unknown, unknown, unknown>
+    >
   >(
     ...parentFactories: ParentFactories
   ): Omit<
     FactoryBuilder<
       Intersect<EntityFromFactory<ParentFactories[number]>>,
       Intersect<TransientParamsFromFactory<ParentFactories[number]>>,
-      Intersect<TraitsFromFactory<ParentFactories[number]>>
+      Intersect<TraitsFromFactory<ParentFactories[number]>>,
+      Intersect<CreatedEntityFromFactory<ParentFactories[number]>>
     >,
     'extends'
   >;
@@ -29,7 +33,8 @@ interface FactoryBuilder<
     FactoryBuilder<
       OuterEntity,
       OuterGlobalTransientParams & GlobalTransientParams,
-      Traits
+      Traits,
+      CreatedEntity
     >,
     'extends' | 'transient'
   >;
@@ -39,7 +44,9 @@ interface FactoryBuilder<
       ExtendedAttributes<OuterEntity, Entity>,
       OuterGlobalTransientParams
     >
-  ): FinalBuilder<FactoryBuilder<Entity, OuterGlobalTransientParams, Traits>>;
+  ): FinalBuilder<
+    FactoryBuilder<Entity, OuterGlobalTransientParams, Traits, CreatedEntity>
+  >;
 
   trait<
     TraitName extends string,
@@ -61,7 +68,8 @@ interface FactoryBuilder<
     FactoryBuilder<
       OuterEntity,
       OuterGlobalTransientParams,
-      Traits & Record<TraitName, TraitTransientParams>
+      Traits & Record<TraitName, TraitTransientParams>,
+      CreatedEntity
     >
   >;
 
@@ -71,12 +79,32 @@ interface FactoryBuilder<
       transientParams: OuterGlobalTransientParams;
     }) => void
   ): FinalBuilder<
-    FactoryBuilder<OuterEntity, OuterGlobalTransientParams, Traits>
+    FactoryBuilder<
+      OuterEntity,
+      OuterGlobalTransientParams,
+      Traits,
+      CreatedEntity
+    >
+  >;
+
+  toCreate<NewCreatedEntity>(
+    toCreateCallback: (params: {
+      entity: OuterEntity;
+      transientParams: OuterGlobalTransientParams;
+    }) => NewCreatedEntity | Promise<NewCreatedEntity>
+  ): FinalBuilder<
+    FactoryBuilder<
+      OuterEntity,
+      OuterGlobalTransientParams,
+      Traits,
+      NewCreatedEntity
+    >
   >;
 }
 
 type EntityFromFactory<Factory> = Factory extends EntityFactory<
   infer Entity,
+  unknown,
   unknown,
   unknown
 >
@@ -86,6 +114,7 @@ type EntityFromFactory<Factory> = Factory extends EntityFactory<
 type TransientParamsFromFactory<Factory> = Factory extends EntityFactory<
   unknown,
   infer TransientParams,
+  unknown,
   unknown
 >
   ? TransientParams
@@ -94,9 +123,19 @@ type TransientParamsFromFactory<Factory> = Factory extends EntityFactory<
 type TraitsFromFactory<Factory> = Factory extends EntityFactory<
   unknown,
   unknown,
-  infer Traits
+  infer Traits,
+  unknown
 >
   ? Traits
+  : never;
+
+type CreatedEntityFromFactory<Factory> = Factory extends EntityFactory<
+  unknown,
+  unknown,
+  unknown,
+  infer CreatedEntity
+>
+  ? CreatedEntity
   : never;
 
 interface TraitBuilder<
@@ -146,7 +185,12 @@ type AttributeBuilder<
   transientParams: TransientParams;
 }) => Entity[Property];
 
-export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
+export interface EntityFactory<
+  Entity,
+  GlobalTransientParams,
+  Traits,
+  CreatedEntity = Entity
+> {
   build<TraitNames extends keyof Traits = never>(
     ...params:
       | [
@@ -174,6 +218,33 @@ export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
       | Array<keyof Traits>
   ): Array<Entity>;
 
+  create<TraitNames extends keyof Traits = never>(
+    ...params:
+      | [
+          ...traits: Array<TraitNames>,
+          params: Partial<
+            Entity &
+              GlobalTransientParams &
+              TransientParamsForTraits<Traits, TraitNames>
+          >
+        ]
+      | Array<keyof Traits>
+  ): Promise<CreatedEntity>;
+
+  createList<TraitNames extends keyof Traits = never>(
+    count: number,
+    ...params:
+      | [
+          ...traits: Array<TraitNames>,
+          params: Partial<
+            Entity &
+              GlobalTransientParams &
+              TransientParamsForTraits<Traits, TraitNames>
+          >
+        ]
+      | Array<keyof Traits>
+  ): Promise<Array<CreatedEntity>>;
+
   rewindSequence(): void;
 
   withSequence(sequence: { count: number }): void;
@@ -185,6 +256,7 @@ export interface EntityFactory<Entity, GlobalTransientParams, Traits> {
 interface FactoryDefinition {
   attributeDefaults: Record<string, any>;
   transientParamDefaults: Record<string, any>;
+  toCreate?: (...args: Array<any>) => any;
   traits: Record<
     string,
     {
@@ -203,14 +275,17 @@ interface FactoryDefinition {
 export function createFactory<
   Entity,
   GlobalTransientParams = unknown,
-  Traits = unknown // eslint-disable-line @typescript-eslint/ban-types
+  Traits = unknown, // eslint-disable-line @typescript-eslint/ban-types
+  CreatedEntity = Entity
 >(
   attributesOrBuilder:
     | EntityAttributes<Entity, GlobalTransientParams>
     | ((
         builder: FactoryBuilder
-      ) => FinalBuilder<FactoryBuilder<Entity, GlobalTransientParams, Traits>>)
-): EntityFactory<Entity, GlobalTransientParams, Traits> {
+      ) => FinalBuilder<
+        FactoryBuilder<Entity, GlobalTransientParams, Traits, CreatedEntity>
+      >)
+): EntityFactory<Entity, GlobalTransientParams, Traits, CreatedEntity> {
   const definition: FactoryDefinition = {
     attributeDefaults: {},
     transientParamDefaults: {},
@@ -226,50 +301,98 @@ export function createFactory<
     definition.attributeDefaults = attributesOrBuilder;
   }
 
-  return createFactoryInternal<Entity, GlobalTransientParams, Traits>(
-    definition
-  );
+  return createFactoryInternal<
+    Entity,
+    GlobalTransientParams,
+    Traits,
+    CreatedEntity
+  >(definition);
 }
 
-function createFactoryInternal<Entity, GlobalTransientParams, Traits>(
-  definition: FactoryDefinition
-) {
-  const factory: EntityFactory<Entity, GlobalTransientParams, Traits> = {
-    build(...args: Array<any>) {
-      let [params, ...traitNames] = args.reverse();
-      if (typeof params === 'string') {
-        traitNames.unshift(params);
-        params = {};
-      }
+function createFactoryInternal<
+  Entity,
+  GlobalTransientParams,
+  Traits,
+  CreatedEntity
+>(definition: FactoryDefinition) {
+  function parseBuildArgs(args: Array<any>) {
+    let [params, ...traitNames] = args.reverse();
+    if (typeof params === 'string') {
+      traitNames.unshift(params);
+      params = {};
+    }
 
-      // split params into attributes and transient params
-      const attributes: Record<string, any> = {};
-      const transientParams: Record<string, any> = {
-        ...definition.transientParamDefaults,
-      };
-      for (const key in params) {
-        if (key in definition.attributeDefaults) {
-          attributes[key] = params[key];
+    // split params into attributes and transient params
+    const attributes: Record<string, any> = {};
+    const transientParams: Record<string, any> = {
+      ...definition.transientParamDefaults,
+    };
+    for (const key in params) {
+      if (key in definition.attributeDefaults) {
+        attributes[key] = params[key];
+      } else {
+        transientParams[key] = params[key];
+      }
+    }
+
+    return { attributes, transientParams, traitNames };
+  }
+
+  function buildEntity(args: Array<any>) {
+    const { attributes, transientParams, traitNames } = parseBuildArgs(args);
+
+    // build entity
+    const entity: Record<string, any> = attributes;
+    definition.sequence.count++;
+
+    const globalAttributeProxy = new Proxy(definition.attributeDefaults, {
+      get(target, key) {
+        if (typeof key !== 'string') return;
+        if (key in entity) return entity[key];
+
+        const attribute = target[key];
+        if (typeof attribute === 'function') {
+          entity[key] = attribute({
+            sequence: definition.sequence.count,
+            entity: globalAttributeProxy,
+            transientParams,
+          });
         } else {
-          transientParams[key] = params[key];
+          entity[key] = attribute;
         }
-      }
 
-      // build entity
-      const entity: Record<string, any> = attributes;
-      definition.sequence.count++;
+        return entity[key];
+      },
+    });
 
-      const globalAttributeProxy = new Proxy(definition.attributeDefaults, {
+    // apply trait defaults
+    const allTraitAttributeDefaults: Record<string, any> = {};
+    for (const traitName of traitNames.slice().reverse()) {
+      Object.assign(
+        allTraitAttributeDefaults,
+        definition.traits[traitName].attributeDefaults
+      );
+    }
+
+    for (const traitName of traitNames) {
+      const trait = definition.traits[traitName];
+      // using proxy for all trait attributes in case a derived attribute
+      // references an attribute supplied by another trait
+      const traitAttributeProxy = new Proxy(allTraitAttributeDefaults, {
         get(target, key) {
           if (typeof key !== 'string') return;
           if (key in entity) return entity[key];
 
-          const attribute = target[key];
+          const attribute =
+            key in target ? target[key] : globalAttributeProxy[key];
           if (typeof attribute === 'function') {
             entity[key] = attribute({
               sequence: definition.sequence.count,
-              entity: globalAttributeProxy,
-              transientParams,
+              entity: traitAttributeProxy,
+              transientParams: {
+                ...trait.transientParamDefaults,
+                ...transientParams,
+              },
             });
           } else {
             entity[key] = attribute;
@@ -279,78 +402,69 @@ function createFactoryInternal<Entity, GlobalTransientParams, Traits>(
         },
       });
 
-      // apply trait defaults
-      const allTraitAttributeDefaults: Record<string, any> = {};
-      for (const traitName of traitNames.slice().reverse()) {
-        Object.assign(
-          allTraitAttributeDefaults,
-          definition.traits[traitName].attributeDefaults
-        );
+      for (const key in trait.attributeDefaults) {
+        traitAttributeProxy[key];
       }
+    }
 
-      for (const traitName of traitNames) {
-        const trait = definition.traits[traitName];
-        // using proxy for all trait attributes in case a derived attribute
-        // references an attribute supplied by another trait
-        const traitAttributeProxy = new Proxy(allTraitAttributeDefaults, {
-          get(target, key) {
-            if (typeof key !== 'string') return;
-            if (key in entity) return entity[key];
+    // apply global defaults
+    for (const key in globalAttributeProxy) {
+      globalAttributeProxy[key];
+    }
 
-            const attribute =
-              key in target ? target[key] : globalAttributeProxy[key];
-            if (typeof attribute === 'function') {
-              entity[key] = attribute({
-                sequence: definition.sequence.count,
-                entity: traitAttributeProxy,
-                transientParams: {
-                  ...trait.transientParamDefaults,
-                  ...transientParams,
-                },
-              });
-            } else {
-              entity[key] = attribute;
-            }
-
-            return entity[key];
+    // after build hooks
+    for (const traitName of traitNames.slice().reverse()) {
+      const trait = definition.traits[traitName];
+      for (const afterBuild of trait.afterBuildHooks) {
+        afterBuild({
+          entity,
+          transientParams: {
+            ...trait.transientParamDefaults,
+            ...transientParams,
           },
         });
-
-        for (const key in trait.attributeDefaults) {
-          traitAttributeProxy[key];
-        }
       }
+    }
 
-      // apply global defaults
-      for (const key in globalAttributeProxy) {
-        globalAttributeProxy[key];
-      }
+    for (const afterBuild of definition.afterBuildHooks) {
+      afterBuild({ entity, transientParams });
+    }
 
-      // after build hooks
-      for (const traitName of traitNames.slice().reverse()) {
-        const trait = definition.traits[traitName];
-        for (const afterBuild of trait.afterBuildHooks) {
-          afterBuild({
-            entity,
-            transientParams: {
-              ...trait.transientParamDefaults,
-              ...transientParams,
-            },
-          });
-        }
-      }
+    return { entity: entity as Entity, transientParams, traitNames };
+  }
 
-      for (const afterBuild of definition.afterBuildHooks) {
-        afterBuild({ entity, transientParams });
-      }
-
-      return entity as Entity;
+  const factory: EntityFactory<
+    Entity,
+    GlobalTransientParams,
+    Traits,
+    CreatedEntity
+  > = {
+    build(...args: Array<any>) {
+      return buildEntity(args).entity;
     },
 
     buildList(count: number, ...args: any[]) {
       const result = [];
       for (let i = 0; i < count; i++) {
         result.push(factory.build(...args));
+      }
+      return result;
+    },
+
+    async create(...args: Array<any>) {
+      const { entity, transientParams } = buildEntity(args);
+
+      const createdEntity = definition.toCreate
+        ? await definition.toCreate({ entity, transientParams })
+        : entity;
+
+      return createdEntity as CreatedEntity;
+    },
+
+    async createList(count: number, ...args: any[]) {
+      const result = [];
+      for (let i = 0; i < count; i++) {
+        result.push(await factory.create(...args));
       }
       return result;
     },
@@ -372,7 +486,7 @@ function createFactoryInternal<Entity, GlobalTransientParams, Traits>(
 
 function createFactoryBuilder(definition: FactoryDefinition) {
   const factoryBuilder: FactoryBuilder<any, any, any> = {
-    extends(...parents: Array<EntityFactory<any, any, any>>) {
+    extends(...parents: Array<EntityFactory<any, any, any, any>>) {
       for (const parent of parents) {
         const parentDefinition = parent.getDefinition();
         definition.attributeDefaults = {
@@ -388,6 +502,7 @@ function createFactoryBuilder(definition: FactoryDefinition) {
           definition.traits[traitName] = { ...trait };
         }
         definition.afterBuildHooks.push(...parentDefinition.afterBuildHooks);
+        definition.toCreate = parentDefinition.toCreate;
       }
       return factoryBuilder;
     },
@@ -428,6 +543,10 @@ function createFactoryBuilder(definition: FactoryDefinition) {
     },
     afterBuild(afterBuildCallback) {
       definition.afterBuildHooks.push(afterBuildCallback);
+      return factoryBuilder;
+    },
+    toCreate(toCreateCallback) {
+      definition.toCreate = toCreateCallback;
       return factoryBuilder;
     },
   };

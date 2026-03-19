@@ -1,7 +1,8 @@
-import { EntityFactory } from './factory';
+import { EntityFactory } from './factory.js';
 
 type EntityFromFactory<Factory> = Factory extends EntityFactory<
   infer Entity,
+  unknown,
   unknown,
   unknown
 >
@@ -15,15 +16,15 @@ type FixtureMap<FC extends FactoryConfig> = {
 };
 
 interface FactoryMap {
-  [key: string]: EntityFactory<unknown, unknown, unknown>;
+  [key: string]: EntityFactory<unknown, unknown, unknown, unknown>;
 }
 
 interface FactoryConfig {
-  [key: string]: EntityFactory<unknown, unknown, unknown> | FactoryMap;
+  [key: string]: EntityFactory<unknown, unknown, unknown, unknown> | FactoryMap;
 }
 
 interface EntityStore<
-  Factory extends EntityFactory<unknown, unknown, unknown>,
+  Factory extends EntityFactory<unknown, unknown, unknown, unknown>,
   Entity = EntityFromFactory<Factory>
 > extends Array<Entity> {
   create: Factory['build'];
@@ -33,7 +34,7 @@ interface EntityStore<
 }
 
 interface ParentEntityStore<
-  Factory extends EntityFactory<unknown, unknown, unknown>,
+  Factory extends EntityFactory<unknown, unknown, unknown, unknown>,
   Entity = EntityFromFactory<Factory>
 > extends Array<Entity> {
   reset(): Array<Entity>;
@@ -41,7 +42,12 @@ interface ParentEntityStore<
 }
 
 type EntityStores<FC extends FactoryConfig> = {
-  [Prop in keyof FC]: FC[Prop] extends EntityFactory<unknown, unknown, unknown>
+  [Prop in keyof FC]: FC[Prop] extends EntityFactory<
+    unknown,
+    unknown,
+    unknown,
+    unknown
+  >
     ? EntityStore<FC[Prop]>
     : FC[Prop] extends FactoryMap
     ? {
@@ -49,8 +55,7 @@ type EntityStores<FC extends FactoryConfig> = {
           EntityStore<FC[Prop][NestedProp]>,
           'reset'
         >;
-      } &
-        ParentEntityStore<FC[Prop][keyof FC[Prop]]>
+      } & ParentEntityStore<FC[Prop][keyof FC[Prop]]>
     : never;
 };
 
@@ -157,8 +162,8 @@ export function createDatabase<
   return database as EntityDatabase<FC, FM>;
 }
 
-function isFactory(arg: any): arg is EntityFactory<any, any, any> {
-  const factory = arg as EntityFactory<any, any, any>;
+function isFactory(arg: any): arg is EntityFactory<any, any, any, any> {
+  const factory = arg as EntityFactory<any, any, any, any>;
   return (
     typeof factory === 'object' &&
     typeof factory.build === 'function' &&

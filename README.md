@@ -24,6 +24,7 @@ Typical Data is a library for building mock data with factories and querying it 
   - [Transient Params](#transient-params)
   - [Traits](#traits)
   - [After Build Hooks](#after-build-hooks)
+  - [Create Hooks](#create-hooks)
   - [Extending Factories](#extending-factories)
 - [Database](#database)
   - [Database Setup](#database-setup)
@@ -42,16 +43,16 @@ Typical Data helps bridge the gap between your tests and your mock API. This lib
 
 ## Installation
 
+Install with pnpm:
+
+```
+pnpm add -D typical-data
+```
+
 Install with npm:
 
 ```
 npm install --save-dev typical-data
-```
-
-Install with yarn:
-
-```
-yarn add --dev typical-data
 ```
 
 ## Quick Start
@@ -149,7 +150,7 @@ it('creates a contact', async () => {
 
 Factories provide a flexible DSL to customize how your objects are created. Factories are designed to integrate with a [database](#database), but can also be used standalone.
 
-Factories are created using the `createFactory` function. It supports two different forms to define factories: an "attributes" notation and a "builder callback" notation. The "attributes" notation lets you define factories that just specify attributes. The "builder callback" notation lets you define more complex factories with attributes, [inheritance](#extending-factories), [transient params](#transient-params), [traits](#traits), and [afterBuild](#after-build-hooks) hooks.
+Factories are created using the `createFactory` function. It supports two different forms to define factories: an "attributes" notation and a "builder callback" notation. The "attributes" notation lets you define factories that just specify attributes. The "builder callback" notation lets you define more complex factories with attributes, [inheritance](#extending-factories), [transient params](#transient-params), [traits](#traits), [afterBuild](#after-build-hooks) hooks, and async [create hooks](#create-hooks).
 
 #### Attributes Notation
 
@@ -209,7 +210,7 @@ const contactFactory = createFactory<Contact>({
 });
 ```
 
-The build method accepts attributes that will override the defaults defined on the factory.
+The `build` method accepts attributes that will override the defaults defined on the factory. Use `build` when you want an in-memory object without any persistence behavior.
 
 ```typescript
 const businessContact = contactFactory.build({
@@ -400,6 +401,48 @@ contactFactory.build({ upcaseName: true });
 contact.name; // 'ALICE'
 ```
 
+### Create Hooks
+
+Factories also support an async `create` path. `build` stays synchronous and returns the built entity type. `create` always runs `afterBuild` hooks first, then calls `toCreate` if it is defined. If no `toCreate` hook is defined, `create` resolves the built entity unchanged.
+
+```typescript
+const contactFactory = createFactory((factory) =>
+  factory
+    .attributes<Contact>({
+      id: 1,
+      email: 'email@example.com',
+      phone: '(555) 123-4567',
+      name: 'Alice',
+    })
+    .toCreate(async ({ entity }) => {
+      return await db.contacts.insert(entity);
+    })
+);
+
+const built = contactFactory.build();
+const created = await contactFactory.create();
+```
+
+If `toCreate` returns a different shape than `build`, that type is inferred automatically:
+
+```typescript
+const userFactory = createFactory((factory) =>
+  factory
+    .attributes<{ name: string }>({
+      name: 'Alice',
+    })
+    .toCreate(async ({ entity }) => {
+      return db.users.insert(entity);
+    })
+);
+
+const built = userFactory.build();
+//    ^? { name: string }
+
+const created = await userFactory.create();
+//    ^? inferred from db.users.insert(...)
+```
+
 ### Extending Factories
 
 Factories can extend from one or more parent factories. This is helpful for sharing logic between factories and modeling inheritance. Transient params, attributes, traits, and after build hooks defined on the parent will be inherited.
@@ -572,10 +615,9 @@ db.users.filter((user) => user.type === 'admin');
 
 ### Reset
 
-The state of the database can be reset back to its original state with the `reset` method. This will delete everything in the database and also re-initialize any fixtures. Calling this in a global hook before each test can be useful to get your database back to a clean slate for each test. Example with Jest:
+The state of the database can be reset back to its original state with the `reset` method. This will delete everything in the database and also re-initialize any fixtures. Calling this in a global hook before each test can be useful to get your database back to a clean slate for each test.
 
 ```typescript
-// jest.setup-after-env.js
 import { db } from './your-db';
 
 beforeEach(() => {
