@@ -1,6 +1,6 @@
 {
   "name": "typical-data",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "Test data factory",
   "homepage": "https://github.com/davidtkramer/typical-data",
   "type": "module",

@@ -1,5 +1,4 @@
 import { expectTypeOf, test } from 'vitest';
-
 import { createFactory } from '../factory.js';
 
 test('infers a distinct created type from toCreate', async () => {
