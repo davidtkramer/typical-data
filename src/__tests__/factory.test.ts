@@ -1,6 +1,30 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createFactory } from '../factory.js';
 
+describe('createFactory', () => {
+  it('throws when the factory-builder callback returns undefined', () => {
+    const invalidFactoryBuilderCallback = () => undefined;
+
+    expect(() =>
+      // @ts-expect-error - exercise invalid runtime callback behavior
+      createFactory(invalidFactoryBuilderCallback)
+    ).toThrowError(
+      'The factory-builder callback must return the supplied factory builder.'
+    );
+  });
+
+  it('throws when the factory-builder callback returns a different value', () => {
+    const invalidFactoryBuilderCallback = () => ({});
+
+    expect(() =>
+      // @ts-expect-error - exercise invalid runtime callback behavior
+      createFactory(invalidFactoryBuilderCallback)
+    ).toThrowError(
+      'The factory-builder callback must return the supplied factory builder.'
+    );
+  });
+});
+
 describe('build', () => {
   type User = {
     id: number;
