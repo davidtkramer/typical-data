@@ -296,7 +296,12 @@ export function createFactory<
 
   if (typeof attributesOrBuilder === 'function') {
     const factoryBuilder = createFactoryBuilder(definition);
-    attributesOrBuilder(factoryBuilder);
+    const returnedFactoryBuilder = attributesOrBuilder(factoryBuilder);
+    if (returnedFactoryBuilder !== factoryBuilder) {
+      throw new Error(
+        'The factory-builder callback must return the supplied factory builder.'
+      );
+    }
   } else {
     definition.attributeDefaults = attributesOrBuilder;
   }
